@@ -798,10 +798,10 @@
                  :placeholder placeholder
                  :style (merge
                           {:outline 0
-                           :padding-left hpad
-                           :padding-right hpad
-                           :padding-top vpad
-                           :padding-bottom vpad
+                           :padding (str vpad "px "
+                                         hpad "px "
+                                         vpad "px "
+                                         hpad "px")
                            :border-width 1
                            :border-style "solid"
                            :border-color (if (or error error?) error-border-color border-color)
