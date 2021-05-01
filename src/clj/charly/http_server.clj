@@ -73,7 +73,13 @@
         
         (srm/wrap-file root-path
           {:allow-symlinks? true})
-        ctm/wrap-content-type)))
+        ctm/wrap-content-type
+        ((fn [handler]
+           (fn [req]
+             (let [resp (handler req)]
+               (if resp
+                 resp
+                 {:status 404}))))))))
 
 (defn start-http-server! [{:keys [dev-server] :as opts}]
   (let [{:keys [port] :or {port 5000}} dev-server
