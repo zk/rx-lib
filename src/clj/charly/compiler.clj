@@ -64,6 +64,14 @@
       out
       (:garden css-spec))))
 
+(defn compile-prod-css [{:keys [prod-target-dir]
+                         css-spec :css}]
+  (doseq [out (:outs css-spec)]
+    (write-css-out
+      prod-target-dir
+      out
+      (:garden css-spec))))
+
 ;; ClojureScript
 
 (defn stop-figwheel-server! [{:keys [id]}]
@@ -108,8 +116,9 @@
      :asset-path "/cljs"}
     (:compiler cljs)))
 
-(defn compile-prod-cljs [{:keys [target-dir cljs-build-dir cljs]
+(defn compile-prod-cljs [{:keys [prod-target-dir cljs-build-dir cljs]
                           :as env}]
+  (println "Compiling cljs...")
   (bapi/build
     (apply bapi/inputs (watch-dirs env))
     (ks/deep-merge
@@ -126,7 +135,7 @@
   (io/make-parents
     (io/as-file
       (concat-paths
-        [target-dir "cljs" "app.js"])))
+        [prod-target-dir "cljs" "app.js"])))
 
   (io/copy
     (io/as-file
@@ -134,7 +143,7 @@
         [cljs-build-dir "app.js"]))
     (io/as-file
       (concat-paths
-        [target-dir "cljs" "app.js"])))
+        [prod-target-dir "cljs" "app.js"])))
 
   (io/copy
     (io/as-file
@@ -176,14 +185,22 @@
         (io/copy file to-file)
         (println " " (.getPath to-file))))))
 
-(defn copy-directories [env]
-  (let [{:keys [target-dir copy-dirs]} env]
+(defn copy-dirs [env to-dir]
+  (let [{:keys [copy-dirs]} env]
     (doseq [dir copy-dirs]
       (try
-        (copy-dir dir target-dir)
+        (copy-dir dir to-dir)
         (catch Exception e
           (println "Error copying directory" dir)
           (prn e))))))
+
+(defn copy-directories [env]
+  (let [{:keys [target-dir]} env]
+    (copy-dirs env target-dir)))
+
+(defn copy-prod-directories [env]
+  (let [{:keys [prod-target-dir]} env]
+    (copy-dirs env prod-target-dir)))
 
 (defn copy-file [{:keys [src dst]} target-dir]
   (let [src-file (io/as-file src)
@@ -205,8 +222,13 @@
     (doseq [file copy-files]
       (copy-file file target-dir))))
 
-(defn gen-files [env]
-  (let [{:keys [target-dir gen-files gen-context]} env]
+(defn copy-prod-files [env]
+  (let [{:keys [prod-target-dir copy-files]} env]
+    (doseq [file copy-files]
+      (copy-file file prod-target-dir))))
+
+(defn -gen-files [env target-dir]
+  (let [{:keys [gen-files gen-context]} env]
     (doseq [{:keys [gen dst]} gen-files]
       (let [dst-file (io/as-file
                        (concat-paths
@@ -215,6 +237,12 @@
         (io/make-parents (io/as-file dst-file))
         (spit dst-file out-str)
         (println "Output generated file to" (.getPath dst-file))))))
+
+(defn gen-files [env]
+  (-gen-files env (:target-dir env)))
+
+(defn gen-prod-files [env]
+  (-gen-files env (:prod-target-dir env)))
 
 (defn clean-dir [path]
   (when (= "/" path)
@@ -241,6 +269,9 @@
 
 (defn compile-prod [env]
   (clean-prod-dir env)
-  (copy-directories env)
-  (copy-files env)
-  (compile-prod-cljs env))
+  (copy-prod-directories env)
+  (copy-prod-files env)
+  (gen-prod-files env)
+  (compile-prod-css env)
+  (compile-prod-cljs env)
+  (println "Done compiling"))

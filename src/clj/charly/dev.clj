@@ -4,13 +4,54 @@
             [charly.watch :as w]
             [charly.http-server :as hs]
             [figwheel.main.api :as fapi]
-            [rum.server-render :as sr]))
+            [rum.server-render :as sr]
+            [nrepl.cmdline :as nrepl]
+            [nrepl.server :as nrepl-server]))
+
+(defonce !nrepl-server (atom nil))
+
+(defn start-clj-repl []
+  (let [nrepl-opts (nrepl/server-opts
+                     {:middleware
+                      '[cider.nrepl/cider-middleware
+                        cider.piggieback/wrap-cljs-repl]})]
+    (when @!nrepl-server
+      (nrepl-server/stop-server @!nrepl-server))
+
+
+    (let [server (nrepl/start-server nrepl-opts)]
+      (reset! !nrepl-server server)
+      (println (nrepl/server-started-message server nrepl-opts))
+      (nrepl/save-port-file server nrepl-opts))))
+
+(comment
+
+  (nrepl/server-opts
+    {:middleware
+     '[cider.nrepl/cider-middleware
+       cider.piggieback/wrap-cljs-repl]})
+
+  (nrepl/connection-opts
+    {:middleware
+     [cider.nrepl/cider-middleware
+      cider.piggieback/wrap-cljs-repl]})
+
+  (start-clj-repl)
+
+  (prn server)
+
+  (nrepl-server/stop-server server)
+
+  (ks/pp (nrepl/args->cli-options ["--middleware" "[cider.nrepl/cider-middleware,cider.piggieback/wrap-cljs-repl]"]))
+
+  )
 
 (defn start-dev! [env]
   (c/compile env)
   (w/start-watch-static! env)
   (hs/start-http-server! env)
-  (c/start-figwheel-server! env))
+  (c/start-figwheel-server! env)
+  (start-clj-repl))
 
 (defn restart-http-server [env]
   (hs/start-http-server! env))
