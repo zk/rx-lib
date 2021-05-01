@@ -42,7 +42,7 @@
         (close! ch)))
     ch))
 
-(defn <parse-hash [webauth-opts-or-client opts]
+(defn <parse-hash [webauth-opts-or-client & [opts]]
   (let [ch (chan)
         client (ensure-webauth-client webauth-opts-or-client)]
     (.parseHash
@@ -53,7 +53,9 @@
                      (anom/anom
                        {:desc (.-errorDescription err)
                         :err (js->clj err)})
-                     res)))
+                     {:access-token (.-accessToken res)
+                      :expires-in (.-expiresIn res)
+                      :id-token (.-idToken res)})))
         (close! ch)))
     ch))
 
@@ -120,8 +122,8 @@
 (<defn <handle-login-hash [webauth-opts-or-client]
   (let [client (ensure-webauth-client webauth-opts-or-client)
         auth (<? (<parse-hash client {}))
-        user-info (<? (<user-info client (.-accessToken auth)))]
-    (ls/set-transit "wc-access-token" (.-accessToken auth))
+        user-info (<? (<user-info client (:access-token auth)))]
+    (ls/set-transit "wc-access-token" (:access-token auth))
     (ls/set-transit "wc-user-info" user-info)
     user-info))
 
@@ -140,7 +142,7 @@
               (do
                 (println "Auth succeeded via hash info")
                 (ls/set-transit "wc-user-info" user-info)
-                (set! js/window.location.hash "")
+                #_(set! js/window.location.hash "")
                 user-info)))
           (do
             (println "Auth succeeded via stored token")
@@ -156,7 +158,7 @@
           (do
             (println "Auth succeeded via hash info")
             (ls/set-transit "wc-user-info" user-info)
-            (set! js/window.location.hash "")
+            #_(set! js/window.location.hash "")
             user-info))))
     (catch js/Error e
       (println "Auth failed with exception" e)
