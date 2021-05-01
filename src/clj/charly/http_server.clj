@@ -1,7 +1,7 @@
 (ns charly.http-server
   (:require [rx.kitchen-sink :as ks]
             [aleph.http :as ah]
-            [ring.util.response :refer [get-header]]
+            [ring.util.response :as response :refer [get-header]]
             [rum.server-render :as sr]
             [charly.static-resource-middleware :as srm]
             [charly.content-type-middleware :as ctm]
@@ -58,19 +58,21 @@
    :status 200})
 
 (defn resolve-clj-handler [opts {:keys [clj cljs] :as route-data}]
-  (if cljs
-    (partial cljs-ns-response cljs)
-    (fn [req]
-      {:body (str "No handler " (pr-str route-data))})))
+  (when cljs
+    (partial cljs-ns-response cljs)))
 
 (defn create-http-handler [{:keys [dev-server routes] :as opts}]
-  (let [{:keys [root-path]} dev-server]
+  (let [{:keys [root-path route-path-to-filename]} dev-server]
     (-> (fn [req]
           (let [matched-route (match-route routes req)]
             (when matched-route
-              (let [clj-handler (resolve-clj-handler opts (:data matched-route))]
-                (clj-handler req)))))
-        
+              (let [resp (-> (response/file-response
+                               (if route-path-to-filename
+                                 (route-path-to-filename (:template matched-route))
+                                 (str (:template matched-route) ".html"))
+                               {:root root-path})
+                             (response/content-type "text/html"))]
+                resp))))
         (srm/wrap-file root-path
           {:allow-symlinks? true})
         ctm/wrap-content-type
