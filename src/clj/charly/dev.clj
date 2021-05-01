@@ -53,6 +53,12 @@
   (c/start-figwheel-server! env)
   (start-clj-repl))
 
+(defn restart-dev! [env]
+  (c/compile env)
+  (w/start-watch-static! env)
+  (hs/start-http-server! env)
+  (c/start-figwheel-server! env))
+
 (defn restart-http-server [env]
   (hs/start-http-server! env))
 
