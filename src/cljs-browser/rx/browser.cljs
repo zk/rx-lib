@@ -351,6 +351,9 @@
                      (ks/url-decode v)])))
            (into {})))))
 
+(defn set-location-href [href]
+  (set! (.-href js/window.location) href))
+
 (defn dev-host? []
   (let [l (.. js/window -location)
         h (.-hostname l)]
