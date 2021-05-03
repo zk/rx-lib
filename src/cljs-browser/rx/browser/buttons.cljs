@@ -317,7 +317,8 @@
                       gap
                       justify
                       align
-                      class]
+                      class
+                      href]
                :as opts}]
   (let [padding (th/pad-padding opts)
         default-button-style
@@ -326,7 +327,7 @@
     (into
       [ui/hover
        (merge
-         {:element (if link? :a :button)
+         {:element (if href :a :button)
           :on-click on-click
           :style (merge
                    padding
@@ -344,7 +345,7 @@
           :style-down active-style
           :disabled (when disabled? "disabled")
           :class class}
-         (select-keys opts [:active? :hover? :down?]))]
+         (select-keys opts [:active? :hover? :down? :href]))]
       (->> [(when icon
               [(if-let [comp (:comp icon)]
                  comp
