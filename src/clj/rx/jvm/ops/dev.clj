@@ -237,6 +237,7 @@
     (stop-node-proc! opts)))
 
 (defn start-dev! [{:keys [id] :as opts}]
+  (assert (map? opts))
   (ks/pn "Starting" id "dev...")
   (start-figwheel-server! opts)
   (when (http-server? opts)
