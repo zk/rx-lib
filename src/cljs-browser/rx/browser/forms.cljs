@@ -13,9 +13,14 @@
             [reagent.core :as r]
             [cljsjs.react :as react]
             [clojure.string :as str]
+            [goog.object :as gobj]
             [clojure.core.async
              :refer [go chan sliding-buffer <! alts! put!]])
   (:refer-clojure :exclude [range]))
+
+(defn assoc-obj [obj k v]
+  (gobj/set obj k v)
+  obj)
 
 (def css-rules
   [[".rx-browser-forms-group > *:last-child"
@@ -114,7 +119,7 @@
 
 (defn get-context [comp]
   (when-let [o (.-context comp)]
-    (.-wrapped o)))
+    (gobj/get o "wrapped")))
 
 (def form-context
   (.createContext js/React nil))
@@ -141,7 +146,7 @@
                  opts
                  {k (when-let [o (.-context
                                    (r/current-component))]
-                      (.-wrapped o))})
+                      (gobj/get o "wrapped"))})
                children)))}))))
 
 (defn input [{:keys [full-width? label
@@ -440,10 +445,12 @@
              form-context (get-context (r/current-component))]
          
          [:> form-provider
-          {:value (js-obj "wrapped"
-                    (merge
-                      form-context
-                      {:data-key data-key}))}
+          {:value
+           (assoc-obj (js-obj)
+             "wrapped"
+             (merge
+               form-context
+               {:data-key data-key}))}
           (into
             [ui/g
              (merge
@@ -597,7 +604,7 @@
                               (.stopPropagation e))
                             (handle-submit form-state))}
 
-              [:> form-provider {:value (js-obj "wrapped" {:form-state form-state})}
+              [:> form-provider {:value (assoc-obj (js-obj) "wrapped" {:form-state form-state})}
                (into
                  [ui/g (dissoc opts :prop-validations :initial-data)]
                  children)]]))}
@@ -618,9 +625,9 @@
                children (process-form-children opts children)]
            [btn/button
             (merge
-              opts
               {:type "submit"
-               :disabled? (submitting? form-state)})]))}
+               :disabled? (submitting? form-state)}
+              opts)]))}
       bind-form-context)))
 
 (defn submit-button-bare [& args]
