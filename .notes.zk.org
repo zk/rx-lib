@@ -1,0 +1,24 @@
+* <2021-05-02 Sun 21:51>
+
+Moving config out of clj and into edn. Needs to be more delcarative. But what are the parts the config atm?
+
+
+Locations
++ project-root
++ build path
++ static path
+
+
++ Copying of files into the static site dir
++ Generating files into the static site dir
++ routes
++ css gen
+
+
+Lifecycle
+
++ Start
+  + check config
+  + start hot loading watchers
+    + static files changed
+    + config changed

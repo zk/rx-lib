@@ -261,3 +261,6 @@
     (c/compile-prod-cljs (prod-env)))
 
   )
+
+
+(def test-config)

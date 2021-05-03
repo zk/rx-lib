@@ -250,25 +250,21 @@
   (println "Cleaning target dir" path)
   (sh/sh "rm" "-rf" path))
 
-(defn clean-target-dir [{:keys [clean-target-dir? target-dir]}]
-  (when clean-target-dir?
-    (clean-dir target-dir)))
-
 (defn clean-prod-dir [{:keys [clean-prod-dir? prod-target-dir]}]
   (when clean-prod-dir?
     (clean-dir prod-target-dir)))
 
+(defn copy-static [{:keys [static-path] :as env} output-path]
+  (sh/sh "cp" "-R" (str static-path "/*") output-path))
+
 (defn compile
   "Takes an environment map and outputs a charly site to the target directory"
-  [env]
-  (clean-target-dir env)
-  (copy-directories env)
-  (copy-files env)
-  (gen-files env)
-  (compile-css env))
+  [env output-path]
+  (copy-static env output-path)
+  #_(gen-files env)
+  #_(compile-css env))
 
 (defn compile-prod [env]
-  (clean-prod-dir env)
   (copy-prod-directories env)
   (copy-prod-files env)
   (gen-prod-files env)

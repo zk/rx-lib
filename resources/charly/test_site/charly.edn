@@ -1,0 +1,3 @@
+{:id "charly-test-site"
+ :project-root "resources/charly/test_site"
+ :routes 'test-site.routes/routes}

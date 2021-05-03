@@ -53,6 +53,7 @@
         funcool/tubax {:mvn/version "0.2.0"},
         hashobject/hashids {:mvn/version "0.2.0"},
         io.nervous/cljs-nodejs-externs {:mvn/version "0.2.0"},
+        jansi-clj/jansi-clj {:mvn/version "0.1.1"}
         juji/editscript {:mvn/version "0.4.2"},
         lilactown/hx {:mvn/version "0.5.3"},
         me.raynes/conch {:mvn/version "0.8.0"},
