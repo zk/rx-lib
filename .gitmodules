@@ -1,0 +1,4 @@
+[submodule "resources/charly/charly-test-site"]
+	path = resources/charly/charly-test-site
+	url = git@github.com:zk/charly-test-site.git
+	branch = main
