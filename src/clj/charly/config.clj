@@ -49,7 +49,6 @@
 
         ns (namespace sym)
         ns (symbol ns)]
-    (prn "rel")
     (use ns :reload-all)
     (let [var (resolve sym)]
       (if var

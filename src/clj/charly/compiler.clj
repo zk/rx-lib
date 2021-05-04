@@ -29,7 +29,6 @@
                      {:keys [path rules-fn]}
                      garden-opts
                      env]
-
   (let [output-path (concat-paths [output-to "css" path])]
     (io/make-parents (io/as-file output-path))
     (spit
@@ -74,14 +73,15 @@
 ;; ClojureScript
 
 (defn stop-figwheel-server! [{:keys [id]}]
-  (let [id (or id "charly-cljs")]
+  (let [id (or id "charly-cljs")
+        id "charly-cljs"]
     (try
       (fapi/stop id)
       (catch Exception e
         #_(ks/pn "Server already stopped")))))
 
 (defn watch-dirs [{:keys [project-root]}]
-  (->> [["src" "cljs"]
+  (->> [["src" "cljs-browser"]
         ["src" "cljc"]]
        (map (fn [parts]
               (concat-paths
@@ -89,7 +89,7 @@
                   [project-root]
                   parts))))))
 
-(defn figwheel-opts [{:keys [cljs opts project-root target-dir] :as env}]
+(defn figwheel-opts [{:keys [cljs opts project-root dev-output-path] :as env}]
   (let [watch-dirs (watch-dirs env)]
     (ks/deep-merge
       {:mode :serve
@@ -99,66 +99,70 @@
        :validate-config true
        :rebel-readline false
        :launch-node false
-       :hot-reload-cljs false
-       :css-dirs [(concat-paths [target-dir "css"])]}
+       :hot-reload-cljs true
+       :css-dirs [(concat-paths [dev-output-path "css"])]}
       (:figwheel cljs))))
 
-(defn figwheel-compiler-opts [{:keys [cljs target-dir] :as opts}]
+(defn figwheel-compiler-opts [{:keys [cljs dev-output-path] :as opts}]
   (ks/deep-merge
     {:output-to (concat-paths
-                  [target-dir "cljs" "app.js"])
+                  [dev-output-path "cljs" "app.js"])
      :output-dir (concat-paths
-                  [target-dir "cljs"])
+                  [dev-output-path "cljs"])
      :optimizations :none
      :source-map true
      :parallel-build true
      :asset-path "/cljs"}
     (:compiler cljs)))
 
-(defn compile-prod-cljs [{:keys [prod-target-dir cljs-build-dir cljs]
+(defn compile-prod-cljs [{:keys [prod-output-path project-root cljs]
                           :as env}]
-  (println "Compiling cljs...")
-  (bapi/build
-    (apply bapi/inputs (watch-dirs env))
-    (ks/deep-merge
-      {:output-to (concat-paths
-                    [cljs-build-dir "app.js"])
-       :output-dir cljs-build-dir
-       :optimizations :advanced
-       :source-map (concat-paths
-                     [cljs-build-dir "app.js.map"])
-       :parallel-build true
-       :asset-path "/cljs"}
-      (:compiler cljs)))
+  (let [cljs-build-dir (concat-paths
+                         [project-root "build" "prod-cljs"])]
+    (println "Compiling cljs...")
+    (bapi/build
+      (apply bapi/inputs (watch-dirs env))
+      (ks/deep-merge
+        {:output-to (concat-paths
+                      [cljs-build-dir "app.js"])
+         :output-dir cljs-build-dir
+         :optimizations :advanced
+         :source-map (concat-paths
+                       [cljs-build-dir "app.js.map"])
+         :parallel-build true
+         :asset-path "/cljs"}
+        (:compiler cljs)))
 
-  (io/make-parents
-    (io/as-file
-      (concat-paths
-        [prod-target-dir "cljs" "app.js"])))
+    (io/make-parents
+      (io/as-file
+        (concat-paths
+          [prod-output-path "cljs" "app.js"])))
 
-  (io/copy
-    (io/as-file
-      (concat-paths
-        [cljs-build-dir "app.js"]))
-    (io/as-file
-      (concat-paths
-        [prod-target-dir "cljs" "app.js"])))
+    (io/copy
+      (io/as-file
+        (concat-paths
+          [cljs-build-dir "app.js"]))
+      (io/as-file
+        (concat-paths
+          [prod-output-path "cljs" "app.js"])))
 
-  (io/copy
-    (io/as-file
-      (concat-paths
-        [cljs-build-dir "app.js.map"]))
-    (io/as-file
-      (concat-paths
-        [cljs-build-dir "app.js.map"]))))
+    (io/copy
+      (io/as-file
+        (concat-paths
+          [cljs-build-dir "app.js.map"]))
+      (io/as-file
+        (concat-paths
+          [cljs-build-dir "app.js.map"])))))
 
 (defn start-figwheel-server! [{:keys [cljs id] :as opts}]
-  (let [id (or id "charly-cljs")]
+  (let [id (or id "charly-cljs")
+        id "charly-cljs"]
     (stop-figwheel-server! cljs)
     (fapi/start
       (figwheel-opts opts)
-      {:id id
-       :options (figwheel-compiler-opts opts)})))
+      (ks/spy
+        {:id id
+         :options (figwheel-compiler-opts opts)}))))
 
 
 
@@ -334,6 +338,21 @@
                  :pretty-print? (not minify?)}
                 env)))
        doall))
+
+(defn generate-vercel-json [{:keys [routes-fn prod-output-path] :as env}]
+  (let [routes (routes-fn env)
+        json-str (-> {:cleanUrls true
+                      :rewrites (->> routes
+                                     (filter #(str/includes? (first %) ":"))
+                                     (mapv
+                                       (fn [[path _]]
+                                         {:source path
+                                          :destination (str/replace path #":" "__cln__")})))}
+                     ks/to-json)]
+    (spit
+      (concat-paths
+        [prod-output-path "vercel.json"])
+      json-str)))
 
 (defn compile
   "Takes an environment map and outputs a charly site to the target directory"

@@ -2,7 +2,8 @@
          "src/cljc"
          "src/cljs"
          "src/cljs-browser"
-         "resources/charly/test_site/src/cljc"]
+         "resources/charly/test_site/src/cljc"
+         "resources/charly/test_site/src/cljs-browser"]
  :deps {aleph {:mvn/version "0.4.6"},
         amazonica {:mvn/version "0.3.145"},
         bidi {:mvn/version "2.1.3"},

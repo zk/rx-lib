@@ -44,6 +44,20 @@
       (gen-from-routes env dev-output-path)
       (gen-css env dev-output-path false))))
 
+(defn compile-prod [env]
+  (let [{:keys [prod-output-path]} env]
+    (println "* Copying static files")
+    (let [copy-res (cmp/copy-static env prod-output-path)]
+      (doseq [{:keys [to-file]} copy-res]
+        (println "  Wrote" (.getPath to-file)))
+      (gen-from-routes env prod-output-path)
+      (gen-css env prod-output-path false)
+      (cmp/compile-prod-cljs env)
+      (cmp/generate-vercel-json env))))
+
 (defn start-http-server! [env]
   (println "* Starting dev server")
   (hs/start-http-server! env))
+
+(defn start-figwheel-server! [env]
+  (cmp/start-figwheel-server! env))
