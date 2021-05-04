@@ -1,24 +1,22 @@
 (ns charly.compiler
   (:require
    [rx.kitchen-sink :as ks]
+   [reitit.core :as rei]
    [clojure.java.io :as io]
    [clojure.string :as str]
    [clojure.java.shell :as sh]
    [figwheel.main.api :as fapi]
    [garden.core :as gc]
-   [cljs.build.api :as bapi])
+   [cljs.build.api :as bapi]
+   [rum.server-render :as sr])
   (:refer-clojure :exclude [compile]))
 
 (defn concat-paths [parts]
-  (->> parts
-       (remove nil?)
-       (map-indexed
-         (fn [i s]
-           (cond
-             (= i (max 0 (dec (count parts)))) s
-             (str/ends-with? s "/") s
-             :else (str s "/"))))
-       (apply str)))
+  (str/replace
+    (->> parts
+         (interpose "/")
+         (apply str))
+    #"/+" "/"))
 
 ;; CSS
 
@@ -27,34 +25,35 @@
     (use ns-sym :reload-all)
     ((resolve sym))))
 
-(defn write-css-out [http-root-path
-                     {:keys [output-to]
-                      rules-fn-sym :rules-fn}
-                     garden-opts]
-  
-  (let [output-path (concat-paths [http-root-path output-to])]
-    (println "Writing css out:" output-path)
+(defn write-css-out [output-to
+                     {:keys [path rules-fn]}
+                     garden-opts
+                     env]
+
+  (let [output-path (concat-paths [output-to "css" path])]
     (io/make-parents (io/as-file output-path))
-    (gc/css
-      (ks/deep-merge
-        {:output-to output-path
-         :pretty-print? true
-         :vendors ["webkit" "moz" "ms"]
-         :auto-prefix #{:justify-content
-                        :align-items
-                        :flex-direction
-                        :flex-wrap
-                        :align-self
-                        :transition
-                        :transform
-                        :background-clip
-                        :background-origin
-                        :background-size
-                        :filter
-                        :font-feature-settings
-                        :appearance}}
-        garden-opts)
-      (resolve-rules rules-fn-sym))))
+    (spit
+      output-path
+      (gc/css
+        (ks/deep-merge
+          {:pretty-print? true
+           :vendors ["webkit" "moz" "ms"]
+           :auto-prefix #{:justify-content
+                          :align-items
+                          :flex-direction
+                          :flex-wrap
+                          :align-self
+                          :transition
+                          :transform
+                          :background-clip
+                          :background-origin
+                          :background-size
+                          :filter
+                          :font-feature-settings
+                          :appearance}}
+          garden-opts)
+        (rules-fn env)))
+    output-path))
 
 (defn compile-css [{:keys [http-root-path]
                     css-spec :css}]
@@ -254,8 +253,87 @@
   (when clean-prod-dir?
     (clean-dir prod-target-dir)))
 
+(defn to-file [from-file static-path output-path]
+  (-> from-file
+      (#(.getPath %))
+      (str/replace-first static-path "")
+      (#(concat-paths
+          [output-path %]))
+      io/as-file))
+
+(defn copy-static-file [{:keys [from-file to-file]}]
+  (io/make-parents to-file)
+  (io/copy from-file to-file))
+
 (defn copy-static [{:keys [static-path] :as env} output-path]
-  (sh/sh "cp" "-R" (str static-path "/*") output-path))
+  (let [files (->> static-path
+                   io/as-file
+                   file-seq
+                   (filter #(.isFile %))
+                   (map (fn [from-file]
+                          {:from-file from-file
+                           :to-file (to-file from-file static-path output-path)})))]
+    (doseq [copy-spec files]
+      (copy-static-file copy-spec))
+    files))
+
+(defn spa-template [env]
+  (str
+    "<!DOCTYPE html>\n"
+    (sr/render-static-markup
+      [:html
+       {:style {:width "100%"
+                :height "100%"}}
+       (into
+         [:head
+          [:meta {:http-equiv "content-type"
+                  :content "text/html"
+                  :charset "UTF8"}]
+          [:meta {:name "viewport" :content "width=device-width, initial-scale=1"}]
+          [:link {:rel "stylesheet"
+                  :href (str "/css/app.css?" (ks/now))}]
+          [:link {:rel "preconnect"
+                  :href "https://fonts.gstatic.com"}]
+          [:link {:rel "stylesheet"
+                  :href "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Sora:wght@400;500;600;700&display=swap"}]])
+       [:body {:style {:width "100%"
+                       :height "100%"}}
+        [:div {:id "rx-root-mount-point"
+               :style {:width "100%"
+                       :height "100%"
+                       :display 'flex}}]
+        [:script {:src (str "/cljs/app.js?" (ks/now))}]]])))
+
+(defn generate-routes [{:keys [routes-fn] :as env} output-dir]
+  (when routes-fn
+    (let [routes (rei/routes
+                   (rei/router
+                     (routes-fn env)))
+          specs (->> routes
+                     (map (fn [[uri-path {:keys [name template]} :as route]]
+                            (let [file-path (str (if (= "/" uri-path)
+                                                   "index"
+                                                   (str/replace uri-path #":" "__cln__"))
+                                                 ".html")]
+                              {:route route
+                               :template (or template spa-template)
+                               :output-path (concat-paths
+                                              [output-dir file-path])}))))]
+      (doseq [{:keys [template output-path]} specs]
+        (io/make-parents (io/as-file output-path))
+        (spit output-path (template env)))
+      specs)))
+
+(defn generate-css [{:keys [css-preamble-fq css-files] :as env} output-to minify?]
+  (->> css-files
+       (map (fn [out]
+              (write-css-out
+                output-to
+                out
+                {:preamble css-preamble-fq
+                 :pretty-print? (not minify?)}
+                env)))
+       doall))
 
 (defn compile
   "Takes an environment map and outputs a charly site to the target directory"

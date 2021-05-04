@@ -43,27 +43,60 @@
                     [project-root "static"])}
     config))
 
-(defn resolve-routes-fn [sym & [opts]]
-  (let [var (resolve sym)]
-    (if var
-      (let [var-val (var-get var)]
-        (if (fn? var-val)
-          var-val
-          (fn [_] var-val)))
-      (anom/anom {:desc "Couldn't resolve routes sym"
-                  :sym sym}))))
+(defn resolve-sym [sym & [opts]]
+  (let [sym (str sym)
+        sym (symbol (str/replace sym "'" ""))
+
+        ns (namespace sym)
+        ns (symbol ns)]
+    (prn "rel")
+    (use ns :reload-all)
+    (let [var (resolve sym)]
+      (if var
+        (let [var-val (var-get var)]
+          (if (fn? var-val)
+            var-val
+            (fn [_] var-val)))
+        (anom/anom {:desc "Couldn't resolve routes sym"
+                    :sym sym})))))
 
 (defn expand-routes [{:keys [routes] :as config}]
   (merge
-    {:routes-fn (resolve-routes-fn routes)}
+    {:routes-fn (resolve-sym routes)}
     config))
+
+(defn expand-css [{:keys [css-files css-preamble project-root] :as config}]
+  (merge
+    config
+    {:css-files (->> css-files
+                     (map (fn [{:keys [rules path] :as spec}]
+                            (merge
+                              spec
+                              {:rules-fn (resolve-sym rules)}))))
+     :css-preamble-fq (->> css-preamble
+                           (mapv #(concat-paths
+                                    [project-root %])))}))
+
+(defn expand-dev-server [{:keys [project-root] :as config}]
+  (merge
+    config
+    {:dev-server {:root-path (concat-paths
+                               [project-root "build/dev"])
+                  :route-path-to-filename (fn [path]
+                                            (let [path (if (= "/" path)
+                                                         "index"
+                                                         path)]
+                                              (str (str/replace path #":" "__cln__") ".html")))
+                  :port 5000}}))
 
 (defn config->env [config]
   (-> config
       expand-project-root
       expand-build-paths
       expand-static-path
-      expand-routes))
+      expand-routes
+      expand-css
+      expand-dev-server))
 
 (defn test-routes [opts]
   [["/" :root]
@@ -73,16 +106,15 @@
   [["/" :root]
    ["/foo/:bar" :foo-bar]])
 
+(defn test-css-rules [env]
+  [[:body {:background-color "red"}]])
+
 (comment
-
-  (resolve-routes-fn 'charly.config/test-rout)
-
-  (expand-config (read-config "./resources/charly/test_site/charly.edn"))
 
   (ks/pp (config->env
            {:id "charly-test-site",
             :project-root "resources/charly/test_site",
-            :routes 'test-site.routes/routes}))
+            :routes 'charly.config/test-routes}))
 
   (ks/pp (read-config "./resources/charly/test_site/charly.edn"))
   (read-config "./resources/charly/test_site/charly_error.edn")

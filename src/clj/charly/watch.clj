@@ -1,6 +1,8 @@
 (ns charly.watch
   (:require [rx.kitchen-sink :as ks]
             [charly.compiler :as c]
+            [charly.config :as config]
+            [charly.cli :as cli]
             [clojure.java.io :as io]
             [hawk.core :as hawk]))
 
@@ -70,6 +72,80 @@
                                     (prn e))))})))
         (css-watchers env)))))
 
+(defn static-dirs [{:keys [project-root dev-output-path]}]
+  (let [static-path (c/concat-paths
+                      [project-root "static"])]
+    [{:paths [static-path]
+      :handler (fn [ctx {:keys [kind file] :as action}]
+                 (let [fq-static-path (c/concat-paths
+                                        [(System/getProperty "user.dir") static-path])
+                       to-file (c/to-file
+                                 file
+                                 fq-static-path
+                                 dev-output-path)]
+                   (when (or (.isFile file) (= :delete kind))
+                     (let [copy-spec {:from-file file
+                                      :to-file to-file}]
+                       (try
+                         (if (get #{:create :modify} kind)
+                           (println "File changed, updating" (.getPath to-file))
+                           (println "File deleted, removing" (.getPath to-file)))
+                         (condp = kind
+                           :create (c/copy-static-file copy-spec)
+                           :modify (c/copy-static-file copy-spec)
+                           :delete (io/delete-file (:to-file copy-spec)))
+                         (catch Exception e
+                           (println "Exception handling filesystem change" (pr-str action))
+                           (prn e)))))))}]))
+
+(defn config-file [{:keys [project-root] :as env}]
+  (let [config-file-path (c/concat-paths
+                           [project-root "charly.edn"])
+        !last-env (atom env)]
+    [{:paths [config-file-path]
+      :handler (fn [ctx {:keys [kind file] :as action}]
+                 (try
+                   (let [last-env @!last-env
+                         next-env (config/config->env
+                                    (ks/edn-read-string (slurp file)))
+                         _ (reset! !last-env next-env)]
+                     (cli/compile-dev next-env))
+                   (catch Exception e
+                     (println "Exception handling filesystem change" (pr-str action))
+                     (prn e))))}]))
+
+(defn css [{:keys [project-root dev-output-path css-preamble-fq] :as env}]
+  (let []
+    (->> env
+         :css-files
+         (map
+           (fn [{:keys [rules-path] :as css-spec}]
+             (let [path (c/concat-paths
+                          [project-root rules-path])]
+               {:paths [path]
+                :handler (fn [ctx {:keys [kind file] :as action}]
+                           (try
+                             (println "CSS changed, writing"
+                               (c/write-css-out
+                                 dev-output-path
+                                 (merge
+                                   css-spec
+                                   {:rules-fn (config/resolve-sym (:rules css-spec))})
+                                 {:preamble css-preamble-fq}
+                                 env))
+                             
+                             (catch Exception e
+                               (println "Exception handling css compile" (pr-str action))
+                               (prn e))))}))))))
+
+(defn start-watchers [env]
+  (hawk/watch!
+    {:watcher :polling}
+    (concat
+      (static-dirs env)
+      (config-file env)
+      (css env))))
+
 (defonce !watcher (atom nil))
 
 (defn start-watch-static! [env]
@@ -78,6 +154,13 @@
   
   (reset! !watcher
     (start-watch-static env)))
+
+(defn start-watchers! [env]
+  (when @!watcher
+    (hawk/stop! @!watcher))
+
+  (reset! !watcher
+    (start-watchers env)))
 
 (defn do-test []
   (start-watch-static!

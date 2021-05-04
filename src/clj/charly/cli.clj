@@ -3,7 +3,11 @@
             [rx.anom :as anom]
             [charly.config :as config]
             [charly.compiler :as cmp]
-            [jansi-clj.core :refer :all]))
+            [charly.http-server :as hs]
+            [jansi-clj.core :refer :all])
+  (:refer-clojure :exclude [compile]))
+
+(def ! (red (bold "!")))
 
 (defn read-config [path]
   (let [config (config/read-config path)]
@@ -12,29 +16,34 @@
       (println "   " (::anom/desc config)))
     config))
 
-(defn gen-from-routes [env]
+(defn gen-from-routes [env output-path]
   (println "* Generating html files from routes")
-  )
+  (let [{:keys [routes-fn routes]} env]
+    (if (anom/? routes-fn)
+      (println ! "Couldn't resolve routes fn" routes)
+      (let [routes-res (cmp/generate-routes env output-path)]
+        (if (anom/? routes-res)
+          (do
+            (println ! "Error generating route html")
+            (println "  " routes-res))
+          (doseq [{:keys [output-path]} routes-res]
+            (println "  Wrote" output-path)))))))
 
-(defn start-dev! [& [{:keys [config-path]}]]
-  (let [config (read-config (or config-path "./"))]
-    (when-not (anom/? config)
-      (let [env (config/config->env config)
-            {:keys [dev-output-path]} env]
-        (println "* Copying static files")
-        (cmp/copy-static env dev-output-path)
-        (gen-from-routes env)))))
+(defn gen-css [env output-path minify?]
+  (println "* Generating css")
+  (let [paths (cmp/generate-css env output-path minify?)]
+    (doseq [path paths]
+      (println "  Wrote" path))))
 
+(defn compile-dev [env]
+  (let [{:keys [dev-output-path]} env]
+    (println "* Copying static files")
+    (let [copy-res (cmp/copy-static env dev-output-path)]
+      (doseq [{:keys [to-file]} copy-res]
+        (println "  Wrote" (.getPath to-file)))
+      (gen-from-routes env dev-output-path)
+      (gen-css env dev-output-path false))))
 
-(comment
-
-  (start-dev! {:config-path "./resources/charly/test_site/charly.edn"})
-
-  (start! {:config-path "./resources/charly/test_site/charly_error.edn"})
-
-  (ks/spy (config/config->env (read-config "./resources/charly/test_site/charly.edn")))
-  (read-config "./resources/charly/test_site/charly_error.edn")
-
-  )
-
-
+(defn start-http-server! [env]
+  (println "* Starting dev server")
+  (hs/start-http-server! env))

@@ -1,3 +1,16 @@
 {:id "charly-test-site"
  :project-root "resources/charly/test_site"
- :routes 'test-site.routes/routes}
+ :routes 'test-site.routes/routes
+ :css-preamble ["resources/css/reset.css"
+                "resources/css/bootstrap-grid.min.css"]
+ :css-files [{:rules 'test-site.css-rules/rules
+              :rules-path "src/cljc/test_site/css_rules.cljc"
+              :path "app.css"}]}
+
+
+
+
+
+
+
+

@@ -1,7 +1,8 @@
 {:paths ["src/clj"
          "src/cljc"
          "src/cljs"
-         "src/cljs-browser"]
+         "src/cljs-browser"
+         "resources/charly/test_site/src/cljc"]
  :deps {aleph {:mvn/version "0.4.6"},
         amazonica {:mvn/version "0.3.145"},
         bidi {:mvn/version "2.1.3"},
@@ -15,6 +16,7 @@
         cljs-http {:mvn/version "0.1.45"},
         cljs-node-io {:mvn/version "0.5.0"},
         cljsbuild {:mvn/version "1.1.7"},
+        commons-io/commons-io {:mvn/version "2.8.0"}
         datascript {:mvn/version "0.18.4"},
         datascript-transit {:mvn/version "0.3.0"},
         garden {:mvn/version "1.3.5"},
@@ -67,6 +69,7 @@
         org.clojure/spec.alpha {:mvn/version "0.2.176"},
         ;;org.clojure/test.check {:mvn/version "0.9.0"},
         org.clojure/test.check {:mvn/version "1.1.0"},
+        org.clojure/tools.namespace {:mvn/version "1.1.0"}
         org.eclipse.jgit/org.eclipse.jgit
         {:mvn/version "5.5.1.201910021850-r"},
         org.pegdown/pegdown {:mvn/version "1.4.1"},

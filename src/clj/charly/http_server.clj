@@ -61,8 +61,15 @@
   (when cljs
     (partial cljs-ns-response cljs)))
 
-(defn create-http-handler [{:keys [dev-server routes] :as opts}]
-  (let [{:keys [root-path route-path-to-filename]} dev-server]
+(defn create-http-handler [{:keys [dev-server routes-fn] :as opts}]
+  (let [{:keys [root-path route-path-to-filename]} dev-server
+        route-path-to-filename (or route-path-to-filename
+                                   (fn [path]
+                                     (let [path (if (= "/" path)
+                                                  "index"
+                                                  path)]
+                                       (str (str/replace path #":" "__cln__") ".html"))))
+        routes (routes-fn opts)]
     (-> (fn [req]
           (let [matched-route (match-route routes req)]
             (when matched-route
