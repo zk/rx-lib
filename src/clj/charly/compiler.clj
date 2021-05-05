@@ -8,7 +8,8 @@
    [figwheel.main.api :as fapi]
    [garden.core :as gc]
    [cljs.build.api :as bapi]
-   [rum.server-render :as sr])
+   [rum.server-render :as sr]
+   [charly.config :as cfg])
   (:refer-clojure :exclude [compile]))
 
 (defn concat-paths [parts]
@@ -258,12 +259,13 @@
     (clean-dir prod-target-dir)))
 
 (defn to-file [from-file static-path output-path]
-  (-> from-file
-      (#(.getPath %))
-      (str/replace-first static-path "")
-      (#(concat-paths
-          [output-path %]))
-      io/as-file))
+  (let [from-path (.getCanonicalPath from-file)
+        static-path (.getCanonicalPath (io/as-file static-path))]
+    (-> from-path
+        (str/replace-first static-path "")
+        (#(concat-paths
+            [output-path %]))
+        io/as-file)))
 
 (defn copy-static-file [{:keys [from-file to-file]}]
   (io/make-parents to-file)
@@ -282,10 +284,7 @@
     files))
 
 (defn spa-template [env]
-  (str
-    "<!DOCTYPE html>\n"
-    (sr/render-static-markup
-      [:html
+  [:html
        {:style {:width "100%"
                 :height "100%"}}
        (into
@@ -306,7 +305,7 @@
                :style {:width "100%"
                        :height "100%"
                        :display 'flex}}]
-        [:script {:src (str "/cljs/app.js?" (ks/now))}]]])))
+        [:script {:src (str "/cljs/app.js?" (ks/now))}]]])
 
 (defn generate-routes [{:keys [routes-fn] :as env} output-dir]
   (when routes-fn
@@ -320,12 +319,15 @@
                                                    (str/replace uri-path #":" "__cln__"))
                                                  ".html")]
                               {:route route
-                               :template (or template spa-template)
+                               :template-fn (or template spa-template)
                                :output-path (concat-paths
                                               [output-dir file-path])}))))]
-      (doseq [{:keys [template output-path]} specs]
+      (doseq [{:keys [template-fn output-path]} specs]
         (io/make-parents (io/as-file output-path))
-        (spit output-path (template env)))
+        (spit output-path (str
+                            "<!DOCTYPE html>\n"
+                            (sr/render-static-markup
+                              (template-fn env)))))
       specs)))
 
 (defn generate-css [{:keys [css-preamble-fq css-files] :as env} output-to minify?]

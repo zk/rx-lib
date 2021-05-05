@@ -2,3 +2,7 @@
 	path = resources/charly/charly-test-site
 	url = git@github.com:zk/charly-test-site.git
 	branch = main
+[submodule "resources/charly/surfclub.vc"]
+	path = resources/charly/surfclub.vc
+	url = git@github.com:zk/surfclub.vc.git
+	branch = main

@@ -49,6 +49,7 @@
 
         ns (namespace sym)
         ns (symbol ns)]
+    (prn "resolve-sym" "ns:" ns "sym:" sym)
     (use ns :reload-all)
     (let [var (resolve sym)]
       (if var
@@ -56,15 +57,19 @@
           (if (fn? var-val)
             var-val
             (fn [_] var-val)))
-        (anom/anom {:desc "Couldn't resolve routes sym"
+        (anom/anom {:desc "Couldn't resolve sym"
                     :sym sym})))))
 
 (defn expand-routes [{:keys [routes] :as config}]
-  (merge
-    {:routes-fn (resolve-sym routes)}
-    config))
+  (prn "res" routes)
+  (let [routes-fn (resolve-sym routes)]
+    (prn "res-fn" routes-fn)
+    (merge
+      {:routes-fn routes-fn}
+      config)))
 
 (defn expand-css [{:keys [css-files css-preamble project-root] :as config}]
+  (prn "expand css")
   (merge
     config
     {:css-files (->> css-files
