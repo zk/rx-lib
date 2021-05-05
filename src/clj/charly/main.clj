@@ -53,13 +53,18 @@
     (cond
       help (do
              (println "Charly CLI")
-             (println summary))
+             (println summary)
+             (System/exit 1))
       dev (start-dev! options)
-      build (build-prod! options)
+      build (do (build-prod! options)
+                (System/exit 0))
       errors
-      (doseq [s errors]
-        (println (red (bold s))))
-      :else (println "Please provide one of --dev or --build"))))
+      (do
+        (doseq [s errors]
+          (println (red (bold s))))
+        (System/exit 1))
+      :else (do (println "Please provide one of --dev or --build")
+                (System/exit 1)))))
 
 
 (comment

@@ -3,7 +3,7 @@
             [rx.anom :as anom]
             [charly.config :as config]
             [charly.compiler :as cmp]
-            [charly.dev :as dev]
+            [charly.nrepl-server :as nr]
             [charly.http-server :as hs]
             [jansi-clj.core :refer :all])
   (:refer-clojure :exclude [compile]))
@@ -62,7 +62,7 @@
 
 (defn start-nrepl-server! [env]
   (println "* Starting nrepl server")
-  (dev/start-clj-repl env))
+  (nr/start-clj-repl env))
 
 (defn start-figwheel-server! [env]
   (cmp/start-figwheel-server! env))

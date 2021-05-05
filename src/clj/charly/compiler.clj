@@ -110,6 +110,8 @@
                   [dev-output-path "cljs" "app.js"])
      :output-dir (concat-paths
                   [dev-output-path "cljs"])
+     :warnings {:single-segment-namespace false}
+     :closure-warnings {:externs-validation :off}
      :optimizations :none
      :source-map true
      :parallel-build true
@@ -128,6 +130,8 @@
                       [cljs-build-dir "app.js"])
          :output-dir cljs-build-dir
          :optimizations :advanced
+         :warnings {:single-segment-namespace false}
+         :closure-warnings {:externs-validation :off}
          :source-map (concat-paths
                        [cljs-build-dir "app.js.map"])
          :parallel-build true

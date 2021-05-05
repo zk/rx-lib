@@ -10,7 +10,7 @@
 
 (defonce !nrepl-server (atom nil))
 
-(defn start-clj-repl [env]
+(defn start-clj-repl []
   (let [nrepl-opts (nrepl/server-opts
                      {:middleware
                       '[cider.nrepl/cider-middleware
