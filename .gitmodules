@@ -1,4 +1,0 @@
-[submodule "resources/charly/surfclub.vc"]
-	path = resources/charly/surfclub.vc
-	url = git@github.com:zk/surfclub.vc.git
-	branch = main
