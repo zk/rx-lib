@@ -773,7 +773,9 @@
                       autofocus?
                       data-key
                       error?
-                      ref]
+                      ref
+                      disabled?
+                      disabled-style]
                :as opts}]
            (let [{:keys [:bg-color
                          :fg-color
@@ -803,7 +805,7 @@
                 {:ref ref
                  :type (or input-type "text")
                  :placeholder placeholder
-                 :style (merge
+                 :style (merge-with ks/deep-merge
                           {:outline 0
                            :padding (str vpad "px "
                                          hpad "px "
@@ -815,11 +817,15 @@
                            :background-color bg-color
                            :color fg-color
                            :display 'block}
-                          (:style opts))
+                          (:style opts)
+                          (when disabled?
+                            disabled-style))
                  :on-change internal-on-change
                  :on-blur on-blur
                  :on-key-press on-key-press
                  :on-key-down on-key-down}
+                (when disabled?
+                  {:disabled "disabled"})
                 (when autofocus?
                   {:autoFocus true})
                 (when !val
@@ -961,7 +967,7 @@
                 (merge
                   (select-keys
                     opts
-                    [:min :max :step])
+                    [:min :max :step :class])
                   (merge
                     {:type "range"
                      :style style
@@ -1078,14 +1084,30 @@
     (r/create-class
       (-> {:reagent-render
            (fn [opts]
-             (let [{:keys [!val value style options]
+             (let [{:keys [!val value style options
+                           error?]
                     :as opts}
-                   (resolve-!val opts)]
+                   (resolve-!val opts)
+
+                   error (resolve-error opts)
+
+                   {:keys [:bg-color
+                           :fg-color
+                           :border-color
+                           :error-border-color
+                           :vpad
+                           :hpad
+                           :vspace
+                           :label-font-size]}
+                   (th/resolve opts
+                     (map :rule common-theme-docs))]
                (into
                  [:select
                   (merge
                     (merge
-                      {:style style
+                      {:style (merge
+                                style
+                                {:border-color (if (or error error?) error-border-color border-color)})
                        :default-value (or value
                                           (when !val (or @!val 0))
                                           0)
@@ -1100,7 +1122,7 @@
                       (map (fn [{:keys [value label disabled?]}]
                              [:option
                               (merge
-                                {:value (pr-str value)}
+                                {:value (if value (pr-str value) label)}
                                 (when disabled?
                                   {:disabled "disabled"}))
                               label]))))))}

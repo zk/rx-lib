@@ -60,12 +60,15 @@
         (anom/anom {:desc "Couldn't resolve sym"
                     :sym sym})))))
 
-(defn expand-routes [{:keys [routes] :as config}]
+(defn expand-routes [{:keys [routes default-page-template] :as config}]
   (prn "res" routes)
-  (let [routes-fn (resolve-sym routes)]
-    (prn "res-fn" routes-fn)
+  (let [routes-fn (resolve-sym routes)
+        default-page-template-fn (when default-page-template
+                                   (resolve-sym default-page-template))]
     (merge
       {:routes-fn routes-fn}
+      (when default-page-template-fn
+        {:default-page-template-fn default-page-template-fn})
       config)))
 
 (defn expand-css [{:keys [css-files css-preamble project-root] :as config}]
@@ -120,7 +123,7 @@
             :project-root "resources/charly/test_site",
             :routes 'charly.config/test-routes}))
 
-  (ks/pp (read-config "./resources/charly/test_site/charly.edn"))
+  (ks/pp (config->env (read-config "./charly.edn")))
   (read-config "./resources/charly/test_site/charly_error.edn")
 
   )

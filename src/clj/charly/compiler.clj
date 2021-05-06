@@ -311,7 +311,7 @@
                        :display 'flex}}]
         [:script {:src (str "/cljs/app.js?" (ks/now))}]]])
 
-(defn generate-routes [{:keys [routes-fn] :as env} output-dir]
+(defn generate-routes [{:keys [routes-fn default-page-template-fn] :as env} output-dir]
   (when routes-fn
     (let [routes (rei/routes
                    (rei/router
@@ -323,7 +323,7 @@
                                                    (str/replace uri-path #":" "__cln__"))
                                                  ".html")]
                               {:route route
-                               :template-fn (or template spa-template)
+                               :template-fn (or template default-page-template-fn spa-template)
                                :output-path (concat-paths
                                               [output-dir file-path])}))))]
       (doseq [{:keys [template-fn output-path]} specs]

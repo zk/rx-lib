@@ -63,7 +63,7 @@
         (doseq [s errors]
           (println (red (bold s))))
         (System/exit 1))
-      :else (do (println "Please provide one of --dev or --build")
+      :else (do (println "Please provide one of --dev or --build, or -h for help")
                 (System/exit 1)))))
 
 
