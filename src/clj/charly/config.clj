@@ -2,7 +2,45 @@
   (:require [rx.kitchen-sink :as ks]
             [rx.anom :as anom]
             [clojure.java.io :as io]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+
+
+            [clojure.tools.namespace.find :as f]
+            [clojure.tools.namespace.file :as nsf]
+            [clojure.tools.namespace.parse :as parse]
+            [clojure.java.classpath :as cp])
+  (:import [java.util.jar JarFile]))
+
+(defn file-paths-for-namespace [root-path ns-sym]
+  (get (->> (f/find-sources-in-dir (io/file root-path))
+            (map (fn [file]
+                   [(-> file
+                        nsf/read-file-ns-decl
+                        parse/name-from-ns-decl)
+                    (.getPath file)]))
+            (group-by first)
+            (map (fn [[k vs]]
+                   [k
+                    (->> vs
+                         (mapv second))]))
+            (into {})
+            ks/spy)
+    ns-sym))
+
+(comment
+
+  (apply hash-map (->> (cp/classpath)
+                       (filter (memfn isFile))
+                       (apply hash-map)))
+
+  (ks/pp (file-paths-for-namespace 'foo))
+
+  (require 'routes)
+
+  (ks/pp (cp/classpath))
+  
+
+  )
 
 (defn concat-paths [parts]
   (->> parts
@@ -60,15 +98,20 @@
         (anom/anom {:desc "Couldn't resolve sym"
                     :sym sym})))))
 
-(defn expand-routes [{:keys [routes default-page-template] :as config}]
-  (prn "res" routes)
+(defn expand-routes [{:keys [project-root routes default-page-template] :as config}]
   (let [routes-fn (resolve-sym routes)
         default-page-template-fn (when default-page-template
-                                   (resolve-sym default-page-template))]
+                                   (resolve-sym default-page-template))
+        file-paths (file-paths-for-namespace
+                     (concat-paths
+                       [project-root "src"])
+                     (symbol (namespace routes)))]
     (merge
       {:routes-fn routes-fn}
       (when default-page-template-fn
         {:default-page-template-fn default-page-template-fn})
+      (when file-paths
+        {:routes-file-paths file-paths})
       config)))
 
 (defn expand-css [{:keys [css-files css-preamble project-root] :as config}]

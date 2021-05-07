@@ -138,13 +138,28 @@
                                (println "Exception handling css compile" (pr-str action))
                                (prn e))))}))))))
 
+(defn routes [{:keys [routes-file-paths project-root]}]
+  (when routes-file-paths
+    [{:paths routes-file-paths
+      :handler (fn [ctx {:keys [kind file] :as action}]
+                 (try
+                   (let [config-file-path (c/concat-paths
+                                            [project-root "charly.edn"])
+                         env (ks/spy "env" (config/config->env
+                                             (ks/edn-read-string (slurp config-file-path))))]
+                     (cli/compile-dev env))
+                   (catch Exception e
+                     (println "Exception handling filesystem change" (pr-str action))
+                     (prn e))))}]))
+
 (defn start-watchers [env]
   (hawk/watch!
     {:watcher :polling}
     (concat
       (static-dirs env)
       (config-file env)
-      (css env))))
+      (css env)
+      (routes env))))
 
 (defonce !watcher (atom nil))
 
