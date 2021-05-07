@@ -10,7 +10,7 @@
             [jansi-clj.core :refer [red bold]]))
 
 (defn start-dev! [& [{config-path :config
-                      :keys [disable-nrepl verbose]}]]
+                      :keys [skip-nrepl verbose]}]]
   (let [config (cli/read-config (or config-path "./charly.edn"))]
     (when-not (anom/? config)
       (let [env (config/config->env config)]
@@ -20,7 +20,7 @@
         (watch/start-watchers! env)
         (cli/start-http-server! env)
         (cli/start-figwheel-server! env)
-        (when-not disable-nrepl
+        (when-not skip-nrepl
           (cli/start-nrepl-server! env))))))
 
 (defn build-prod! [& [{config-path :config :keys [verbose]}]]
@@ -39,7 +39,7 @@
 
 (def cli-options
   [["-c" "--config CONFIG_PATH" "Path to charly config"]
-   ["-n" "--disable-nrepl" "Disable built int nrepl server"]
+   ["-s" "--skip-nrepl" "Skip starting nrepl server"]
    ["-d" "--dev" "Start dev"]
    ["-b" "--build" "Build prod to build/prod"]
    ["-v" "--verbose" "Print debug info to stdout"]
@@ -73,7 +73,7 @@
   (-main "-h")
   (-main "--asdfasdf")
 
-  (-main "--dev" "--disable-nrepl")
+  (-main "--dev" "--skip-nrepl")
 
   (-main "--build")
 
