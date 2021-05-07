@@ -107,7 +107,9 @@
                  (try
                    (let [last-env @!last-env
                          next-env (config/config->env
-                                    (ks/edn-read-string (slurp file)))
+                                    (merge
+                                      (ks/edn-read-string (slurp file))
+                                      {:runtime-env :dev}))
                          _ (reset! !last-env next-env)]
                      (cli/compile-dev next-env))
                    (catch Exception e
@@ -145,8 +147,10 @@
                  (try
                    (let [config-file-path (c/concat-paths
                                             [project-root "charly.edn"])
-                         env (ks/spy "env" (config/config->env
-                                             (ks/edn-read-string (slurp config-file-path))))]
+                         env (config/config->env
+                               (merge
+                                 (ks/edn-read-string (slurp config-file-path))
+                                 {:runtime-env :dev}))]
                      (cli/compile-dev env))
                    (catch Exception e
                      (println "Exception handling filesystem change" (pr-str action))

@@ -11,7 +11,9 @@
 
 (defn start-dev! [& [{config-path :config
                       :keys [skip-nrepl verbose]}]]
-  (let [config (cli/read-config (or config-path "./charly.edn"))]
+  (let [config (merge
+                 (cli/read-config (or config-path "./charly.edn"))
+                 {:runtime-env :dev})]
     (when-not (anom/? config)
       (let [env (config/config->env config)]
         (when verbose
@@ -26,7 +28,9 @@
 (defn build-prod! [& [{config-path :config :keys [verbose]}]]
   (println "\n")
   (println "Generating production build")
-  (let [config (cli/read-config (or config-path "./charly.edn"))]
+  (let [config (merge
+                 (cli/read-config (or config-path "./charly.edn"))
+                 {:runtime-env :dev})]
     (when-not (anom/? config)
       (let [env (config/config->env config)]
         (when verbose
@@ -85,7 +89,9 @@
 
   (start! {:config-path "./resources/charly/test_site/charly_error.edn"})
 
-  (ks/spy (config/config->env (read-config "./resources/charly/test_site/charly.edn")))
+  (ks/spy (config/config->env (merge
+                                (read-config "./resources/charly/test_site/charly.edn")
+                                {:runtime-env :dev})))
   (read-config "./resources/charly/test_site/charly_error.edn"))
 
 

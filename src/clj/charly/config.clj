@@ -23,8 +23,7 @@
                    [k
                     (->> vs
                          (mapv second))]))
-            (into {})
-            ks/spy)
+            (into {}))
     ns-sym))
 
 (comment
@@ -139,14 +138,69 @@
                                               (str (str/replace path #":" "__cln__") ".html")))
                   :port 5000}}))
 
+(defn parse-env [s]
+  (->> (str/split s #"\n+")
+       (map (fn [s]
+              (str/split s #"=")))
+       (into {})))
+
+(defn parse-env-paths [paths]
+  (->> paths
+       (map (fn [f]
+              (try
+                (slurp f)
+                (catch Exception e
+                  nil))))
+       (remove nil?)
+       (map parse-env)
+       (reduce merge)))
+
+(defn expand-env-vars [{:keys [project-root runtime-env] :as config}]
+  (let [dev-env-file-props (->> [".env"
+                                 ".env.dev"
+                                 ".env.dev.local"]
+                                (map #(concat-paths
+                                        [project-root %]))
+                                parse-env-paths)
+        prod-env-file-props (->> [".env"
+                                  ".env.prod"
+                                  ".env.prod.local"]
+                                 (map #(concat-paths
+                                         [project-root %]))
+                                 parse-env-paths)
+        dev-env (merge dev-env-file-props (System/getenv))
+        prod-env (merge prod-env-file-props (System/getenv))]
+    (merge
+      config
+      (if (= runtime-env :prod)
+        (when-not (empty? prod-env)
+          {:env-vars prod-env
+           :client-env-vars (->> prod-env
+                                 (filter (fn [[k v]]
+                                           (str/starts-with? k "CHARLY_PUB")))
+                                 (into {}))})
+        (when-not (empty? dev-env)
+          {:env-vars dev-env 
+           :client-env-vars (->> dev-env
+                                 (filter (fn [[k v]]
+                                           (str/starts-with? k "CHARLY_PUB")))
+                                 (into {}))})))))
+
+(defn expand-runtime-env [config]
+  (merge
+    config
+    {:runtime-env (or (:runtime-env config) :prod)}))
+
 (defn config->env [config]
   (-> config
+      expand-runtime-env
       expand-project-root
       expand-build-paths
       expand-static-path
       expand-routes
       expand-css
-      expand-dev-server))
+      expand-dev-server
+      expand-env-vars))
 
 (defn test-routes [opts]
   [["/" :root]
@@ -166,7 +220,7 @@
             :project-root "resources/charly/test_site",
             :routes 'charly.config/test-routes}))
 
-  (ks/pp (config->env (read-config "./charly.edn")))
+  (ks/pp (expand-env-vars (read-config "./charly.edn")))
   (read-config "./resources/charly/test_site/charly_error.edn")
 
   )

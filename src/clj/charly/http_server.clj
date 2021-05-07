@@ -26,41 +26,6 @@
       (str/replace #"-" "_")
       (str/replace #"/" ".")))
 
-(defn cljs-ns-response [main-ns req]
-  {:body
-   (str
-     "<!DOCTYPE html>\n"
-     (sr/render-static-markup
-       [:html
-        {:style {:width "100%"
-                 :height "100%"}}
-        (into
-          [:head
-           [:meta {:http-equiv "content-type"
-                   :content "text/html"
-                   :charset "UTF8"}]
-           [:meta {:name "viewport" :content "width=device-width, initial-scale=1"}]
-           [:link {:rel "stylesheet"
-                   :href "/css/app.css"}]
-           [:link {:rel "preconnect"
-                   :href "https://fonts.gstatic.com"}]
-           [:link {:rel "stylesheet"
-                   :href "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Sora:wght@400;500;600;700&display=swap"}]])
-        [:body {:style {:width "100%"
-                        :height "100%"}}
-         [:div {:id "rx-root-mount-point"
-                :style {:width "100%"
-                        :height "100%"
-                        :display 'flex}}]
-         [:script {:dangerouslySetInnerHTML {:__html (str "var CHARLY_ENV=" (ks/to-json (ks/to-transit {:cljs-main main-ns})) ";")}}]
-         [:script {:src "/cljs/app.js"}]]]))
-   :headers {"Content-Type" "text/html"}
-   :status 200})
-
-(defn resolve-clj-handler [opts {:keys [clj cljs] :as route-data}]
-  (when cljs
-    (partial cljs-ns-response cljs)))
-
 (defn create-http-handler [{:keys [dev-server routes-fn] :as opts}]
   (let [{:keys [root-path route-path-to-filename]} dev-server
         route-path-to-filename (or route-path-to-filename

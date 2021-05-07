@@ -311,7 +311,7 @@
                        :display 'flex}}]
         [:script {:src (str "/cljs/app.js?" (ks/now))}]]])
 
-(defn generate-routes [{:keys [routes-fn default-page-template-fn] :as env} output-dir]
+(defn generate-routes [{:keys [routes-fn default-page-template-fn runtime-env] :as env} output-dir]
   (when routes-fn
     (let [routes (rei/routes
                    (rei/router
