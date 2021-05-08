@@ -4,7 +4,9 @@
             [charly.config :as config]
             [charly.cli :as cli]
             [clojure.java.io :as io]
-            [hawk.core :as hawk]))
+            [hawk.core :as hawk]
+            [clojure.tools.namespace.repl :as repl]))
+
 
 (defn create-directory [path]
   (.mkdirs (io/file path)))
@@ -21,6 +23,7 @@
                                       [project-root watch-path]))))
                  :handler (fn [ctx {:keys [kind file] :as action}]
                             (try
+                              (repl/refresh)
                               (c/write-css-out
                                 (:http-root-path env)
                                 out
@@ -135,7 +138,6 @@
                                    {:rules-fn (config/resolve-sym (:rules css-spec))})
                                  {:preamble css-preamble-fq}
                                  env))
-                             
                              (catch Exception e
                                (println "Exception handling css compile" (pr-str action))
                                (prn e))))}))))))
@@ -209,3 +211,4 @@
   (do-test)
 
   )
+

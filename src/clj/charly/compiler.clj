@@ -21,11 +21,6 @@
 
 ;; CSS
 
-(defn resolve-rules [sym]
-  (let [ns-sym (symbol (namespace sym))]
-    (use ns-sym :reload-all)
-    ((resolve sym))))
-
 (defn write-css-out [output-to
                      {:keys [path rules-fn]}
                      garden-opts
@@ -52,7 +47,8 @@
                           :font-feature-settings
                           :appearance}}
           garden-opts)
-        (rules-fn env)))
+        (ks/spy
+          (rules-fn env))))
     output-path))
 
 (defn compile-css [{:keys [http-root-path]

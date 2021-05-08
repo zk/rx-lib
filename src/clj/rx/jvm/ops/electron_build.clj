@@ -8,7 +8,7 @@
             [garden.core :as garden]
             [clojure.java.shell :as sh]
             [rx.jot.css :as jot-css]
-            [zel.version])
+            #_[zel.version])
   (:import [java.nio.file Path Paths Files]
            [java.nio.file.attribute FileAttribute]))
 
@@ -405,33 +405,33 @@ module.exports = async function (params) {
   (sh/with-sh-dir "target/prod/jelly"
     (sh/sh "yarn" "dist"))
 
-  (build
-    {:output-path "target/prod/papers"
-     :version zel.version/version
-     :package-json-path "./electron/package.json"
-     :app-id "com.heyzk.papers"
-     :app-description "Superpaper"
-     :app-title "Superpaper"
-     :app-icon-path "./resources/papers/icon.png"
-     :main-namespace "zel.entry"
-     :node-modules-path "./electron/node_modules"
-     :main-js-path "./electron/main.js"
-     :github-deploy-token
-     (-> (slurp "/Users/zk/.zel-deploy.json")
-         ks/from-json
-         :gh-token)
-     :publish-github
-     {:repository "https://github.com/zk/zel-releases"
-      :draft false}
-     :publish? false
-     :mac-entitlements-path "./resources/papers/entitlements.plist"
-     :css-rules (jot-css/rules)
-     :source-paths
-     ["src/cljs-electron"
-      "src/cljs-node"
-      "src/cljs"
-      "src/cljs-browser"
-      "src/cljc"]})
+  #_(build
+      {:output-path "target/prod/papers"
+       :version zel.version/version
+       :package-json-path "./electron/package.json"
+       :app-id "com.heyzk.papers"
+       :app-description "Superpaper"
+       :app-title "Superpaper"
+       :app-icon-path "./resources/papers/icon.png"
+       :main-namespace "zel.entry"
+       :node-modules-path "./electron/node_modules"
+       :main-js-path "./electron/main.js"
+       :github-deploy-token
+       (-> (slurp "/Users/zk/.zel-deploy.json")
+           ks/from-json
+           :gh-token)
+       :publish-github
+       {:repository "https://github.com/zk/zel-releases"
+        :draft false}
+       :publish? false
+       :mac-entitlements-path "./resources/papers/entitlements.plist"
+       :css-rules (jot-css/rules)
+       :source-paths
+       ["src/cljs-electron"
+        "src/cljs-node"
+        "src/cljs"
+        "src/cljs-browser"
+        "src/cljc"]})
 
   )
 

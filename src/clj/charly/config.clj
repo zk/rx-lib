@@ -87,7 +87,7 @@
         ns (namespace sym)
         ns (symbol ns)]
     (prn "resolve-sym" "ns:" ns "sym:" sym)
-    (use ns :reload-all)
+    (use ns :reload)
     (let [var (resolve sym)]
       (if var
         (let [var-val (var-get var)]
