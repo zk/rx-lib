@@ -77,22 +77,6 @@
                      (println "Exception handling filesystem change" (pr-str action))
                      (prn e))))}]))
 
-(defn routes [{:keys [routes-file-paths project-root]}]
-  (when routes-file-paths
-    [{:paths routes-file-paths
-      :handler (fn [ctx {:keys [kind file] :as action}]
-                 (try
-                   (let [config-file-path (c/concat-paths
-                                            [project-root "charly.edn"])
-                         env (config/config->env
-                               (merge
-                                 (ks/edn-read-string (slurp config-file-path))
-                                 {:runtime-env :dev}))]
-                     (cli/compile-dev env))
-                   (catch Exception e
-                     (println "Exception handling filesystem change" (pr-str action))
-                     (prn e))))}]))
-
 (defn handle-css-change [{:keys [css-preamble-fq dev-output-path] :as env} nss]
   (let [nss (set nss)]
     (doseq [{:keys [rules-ns-sym rules] :as css-spec} (:css-files env)]
@@ -144,7 +128,6 @@
       (concat
         (static-dirs env)
         (config-file env)
-        #_(routes env)
         (source-files env)))))
 
 (defonce !watcher (atom nil))

@@ -26,21 +26,6 @@
             (into {}))
     ns-sym))
 
-(comment
-
-  (apply hash-map (->> (cp/classpath)
-                       (filter (memfn isFile))
-                       (apply hash-map)))
-
-  (ks/pp (file-paths-for-namespace 'foo))
-
-  (require 'routes)
-
-  (ks/pp (cp/classpath))
-  
-
-  )
-
 (defn concat-paths [parts]
   (->> parts
        (remove nil?)
@@ -106,11 +91,6 @@
         var
         (anom/anom {:desc "Couldn't resolve var"
                     :sym sym})))))
-
-(comment
-
-  (ks/spy ((resolve-var 'app.css-rules/rules) {}))
-  )
 
 (defn expand-routes [{:keys [project-root routes default-page-template] :as config}]
   (let [routes-fn (resolve-sym routes)
@@ -223,28 +203,3 @@
       expand-css
       expand-dev-server
       expand-env-vars))
-
-(defn test-routes [opts]
-  [["/" :root]
-   ["/foo/:bar" :foo-bar]])
-
-(def test-routes-def
-  [["/" :root]
-   ["/foo/:bar" :foo-bar]])
-
-(defn test-css-rules [env]
-  [[:body {:background-color "red"}]])
-
-(comment
-
-  (ks/pp (config->env
-           {:id "charly-test-site",
-            :project-root "resources/charly/test_site",
-            :routes 'charly.config/test-routes}))
-
-  (ks/pp (config->env (read-config "./charly.edn")))
-  (read-config "./resources/charly/test_site/charly_error.edn")
-
-  )
-
-

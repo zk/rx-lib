@@ -48,7 +48,7 @@
                           :appearance}}
           garden-opts)
         #_(rules-fn env)
-        (ks/spy ((cfg/resolve-var rules) env))))
+        ((cfg/resolve-var rules) env)))
     output-path))
 
 (defn compile-css [{:keys [http-root-path]
@@ -161,9 +161,8 @@
     (stop-figwheel-server! cljs)
     (fapi/start
       (figwheel-opts opts)
-      (ks/spy
-        {:id id
-         :options (figwheel-compiler-opts opts)}))))
+      {:id id
+       :options (figwheel-compiler-opts opts)})))
 
 
 
@@ -370,3 +369,4 @@
   (compile-prod-css env)
   (compile-prod-cljs env)
   (println "Done compiling"))
+
