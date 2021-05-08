@@ -86,8 +86,6 @@
 
         ns (namespace sym)
         ns (symbol ns)]
-    (prn "resolve-sym" "ns:" ns "sym:" sym)
-    (use ns :reload)
     (let [var (resolve sym)]
       (if var
         (let [var-val (var-get var)]
@@ -96,6 +94,23 @@
             (fn [_] var-val)))
         (anom/anom {:desc "Couldn't resolve sym"
                     :sym sym})))))
+
+(defn resolve-var [sym & [opts]]
+  (let [sym (str sym)
+        sym (symbol (str/replace sym "'" ""))
+
+        ns (namespace sym)
+        ns (symbol ns)]
+    (let [var (resolve sym)]
+      (if var
+        var
+        (anom/anom {:desc "Couldn't resolve var"
+                    :sym sym})))))
+
+(comment
+
+  (ks/spy ((resolve-var 'app.css-rules/rules) {}))
+  )
 
 (defn expand-routes [{:keys [project-root routes default-page-template] :as config}]
   (let [routes-fn (resolve-sym routes)
@@ -114,14 +129,21 @@
       config)))
 
 (defn expand-css [{:keys [css-files css-preamble project-root] :as config}]
-  (prn "expand css")
   (merge
     config
     {:css-files (->> css-files
                      (map (fn [{:keys [rules path] :as spec}]
-                            (merge
-                              spec
-                              {:rules-fn (resolve-sym rules)}))))
+                            (let [rules-ns-sym (symbol (namespace rules))]
+                              (merge
+                                spec
+                                {;;:rules-fn (resolve-sym rules)
+                                 :rules-var (resolve-var rules)
+                                 :rules-ns-sym rules-ns-sym
+                                 :rules-path (first
+                                               (file-paths-for-namespace
+                                                 (concat-paths
+                                                   [project-root "src"])
+                                                 rules-ns-sym))})))))
      :css-preamble-fq (->> css-preamble
                            (mapv #(concat-paths
                                     [project-root %])))}))
@@ -220,7 +242,7 @@
             :project-root "resources/charly/test_site",
             :routes 'charly.config/test-routes}))
 
-  (ks/pp (expand-env-vars (read-config "./charly.edn")))
+  (ks/pp (config->env (read-config "./charly.edn")))
   (read-config "./resources/charly/test_site/charly_error.edn")
 
   )

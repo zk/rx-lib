@@ -5,8 +5,10 @@
             [charly.cli :as cli]
             [clojure.java.io :as io]
             [hawk.core :as hawk]
-            [clojure.tools.namespace.repl :as repl]))
-
+            [charly.tools-repl :as tr]
+            [clojure.core.async
+             :as async
+             :refer [go <! timeout chan close! put!]]))
 
 (defn create-directory [path]
   (.mkdirs (io/file path)))
@@ -23,7 +25,6 @@
                                       [project-root watch-path]))))
                  :handler (fn [ctx {:keys [kind file] :as action}]
                             (try
-                              (repl/refresh)
                               (c/write-css-out
                                 (:http-root-path env)
                                 out
@@ -31,49 +32,6 @@
                               (catch Exception e
                                 (println "Exception handling css compile" (pr-str action))
                                 (prn e))))})))))
-
-(defn start-watch-static [env]
-  (let [{:keys [target-dir copy-dirs]} env]
-    (doseq [{:keys [src]} copy-dirs]
-      (create-directory src))
-    (hawk/watch!
-      {:watcher :polling}
-      (concat
-        (->> env
-             :copy-dirs
-             (map (fn [{:keys [src dst] :as dir}]
-                    {:paths [src]
-                     :handler (fn [ctx {:keys [kind file] :as action}]
-                                (try
-                                  (condp = kind
-                                    :create (c/copy-dir dir target-dir)
-                                    :modify (c/copy-dir dir target-dir)
-                                    :delete (do
-                                              (let [dst-file (io/as-file
-                                                               (c/concat-paths
-                                                                 [target-dir dst (.getName file)]))]
-                                                (io/delete-file dst-file))))
-                                  (catch Exception e
-                                    (println "Exception handling filesystem change" (pr-str action))
-                                    (prn e))))})))
-        (->> env
-             :copy-files
-             (map (fn [{:keys [src dst] :as fl}]
-                    {:paths [src]
-                     :handler (fn [ctx {:keys [kind file] :as action}]
-                                (try
-                                  (condp = kind
-                                    :create (c/copy-file fl target-dir)
-                                    :modify (c/copy-file fl target-dir)
-                                    :delete (do
-                                              (let [dst-file (io/as-file
-                                                               (c/concat-paths
-                                                                 [target-dir dst (.getName file)]))]
-                                                (io/delete-file dst-file))))
-                                  (catch Exception e
-                                    (println "Exception handling filesystem change" (pr-str action))
-                                    (prn e))))})))
-        (css-watchers env)))))
 
 (defn static-dirs [{:keys [project-root dev-output-path]}]
   (let [static-path (c/concat-paths
@@ -119,29 +77,6 @@
                      (println "Exception handling filesystem change" (pr-str action))
                      (prn e))))}]))
 
-(defn css [{:keys [project-root dev-output-path css-preamble-fq] :as env}]
-  (let []
-    (->> env
-         :css-files
-         (map
-           (fn [{:keys [rules-path] :as css-spec}]
-             (let [path (c/concat-paths
-                          [project-root rules-path])]
-               {:paths [path]
-                :handler (fn [ctx {:keys [kind file] :as action}]
-                           (try
-                             (println "CSS changed, writing"
-                               (c/write-css-out
-                                 dev-output-path
-                                 (merge
-                                   css-spec
-                                   {:rules-fn (config/resolve-sym (:rules css-spec))})
-                                 {:preamble css-preamble-fq}
-                                 env))
-                             (catch Exception e
-                               (println "Exception handling css compile" (pr-str action))
-                               (prn e))))}))))))
-
 (defn routes [{:keys [routes-file-paths project-root]}]
   (when routes-file-paths
     [{:paths routes-file-paths
@@ -158,23 +93,61 @@
                      (println "Exception handling filesystem change" (pr-str action))
                      (prn e))))}]))
 
+(defn handle-css-change [{:keys [css-preamble-fq dev-output-path] :as env} nss]
+  (let [nss (set nss)]
+    (doseq [{:keys [rules-ns-sym rules] :as css-spec} (:css-files env)]
+      (when (get nss rules-ns-sym)
+        (println "CSS changed, writing"
+          (c/write-css-out
+            dev-output-path
+            (merge
+              css-spec
+              #_{:rules-fn (config/resolve-sym rules)})
+            {:preamble css-preamble-fq}
+            env))))))
+
+(defn handle-routes-change [{:keys [dev-output-path project-root routes] :as env} nss]
+  (let [nss (set nss)]
+    (when (get nss (symbol (namespace routes)))
+      (let [config-file-path (c/concat-paths
+                               [project-root "charly.edn"])
+            env (config/config->env
+                  (merge
+                    (ks/edn-read-string (slurp config-file-path))
+                    {:runtime-env :dev}))]
+        (cli/gen-from-routes env dev-output-path)))))
+
+(defn handle-changed-nss [env nss]
+  (handle-css-change env nss)
+  (handle-routes-change env nss))
+
+(defn source-files [{:keys [project-root] :as env}]
+  (let [src-path (c/concat-paths
+                   [project-root "src"])]
+    [{:paths [src-path]
+      :filter (fn [_ {:keys [kind file]}]
+                (and (.isFile file)
+                     (not (.startsWith (.getName file) ".#"))))
+      :handler (fn [ctx {:keys [kind file] :as action}]
+                 (try
+                   (tr/set-refresh-dirs "./src")
+                   (let [nss (tr/refresh)]
+                     (handle-changed-nss env nss))
+                   (catch Exception e
+                     (println "Exception handling filesystem change" (pr-str action))
+                     (prn e))))}]))
+
 (defn start-watchers [env]
-  (hawk/watch!
-    {:watcher :polling}
-    (concat
-      (static-dirs env)
-      (config-file env)
-      (css env)
-      (routes env))))
+  (let [ch (chan)]
+    (hawk/watch!
+      {:watcher :polling}
+      (concat
+        (static-dirs env)
+        (config-file env)
+        #_(routes env)
+        (source-files env)))))
 
 (defonce !watcher (atom nil))
-
-(defn start-watch-static! [env]
-  (when @!watcher
-    (hawk/stop! @!watcher))
-  
-  (reset! !watcher
-    (start-watch-static env)))
 
 (defn start-watchers! [env]
   (when @!watcher
@@ -182,33 +155,3 @@
 
   (reset! !watcher
     (start-watchers env)))
-
-(defn do-test []
-  (start-watch-static!
-    {:clean-target-dir? true
-     :target-dir "target/charly/prod"
-     :copy-dirs [{:src "resources/charly/demo-site/html"
-                  :dst "html"}
-                 {:src "resources/charly/demo-site/css"
-                  :dst "css"}]
-     :copy-files [{:src "resources/charly/demo-site/test-file.json"
-                   :dst "test-file.json"}]
-     :gen-context {:foo "bar"}
-     :gen-files [{:gen (fn [ctx]
-                         (str
-                           "<!DOCTYPE html><html><head><title>gen title</title></head><body>"
-                           (str "<pre>" (pr-str ctx) "</pre>")
-                           "</body></html>"))
-                  :dst "html/generated.html"}
-                 {:gen (fn [ctx]
-                         "body {background-color: green;}")
-                  :dst "css/generated.css"}]}))
-
-(comment
-
-  (.getParent (io/as-file "resources/charly/demo-site/test-file.json"))
-
-  (do-test)
-
-  )
-

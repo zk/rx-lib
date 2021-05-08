@@ -22,7 +22,7 @@
 ;; CSS
 
 (defn write-css-out [output-to
-                     {:keys [path rules-fn]}
+                     {:keys [path rules-fn rules-var rules]}
                      garden-opts
                      env]
   (let [output-path (concat-paths [output-to "css" path])]
@@ -47,8 +47,8 @@
                           :font-feature-settings
                           :appearance}}
           garden-opts)
-        (ks/spy
-          (rules-fn env))))
+        #_(rules-fn env)
+        (ks/spy ((cfg/resolve-var rules) env))))
     output-path))
 
 (defn compile-css [{:keys [http-root-path]
