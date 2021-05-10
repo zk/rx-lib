@@ -90,9 +90,9 @@
             {:preamble css-preamble-fq}
             env))))))
 
-(defn handle-routes-change [{:keys [dev-output-path project-root routes] :as env} nss]
+(defn handle-routes-change [{:keys [dev-output-path project-root client-routes] :as env} nss]
   (let [nss (set nss)]
-    (when (get nss (symbol (namespace routes)))
+    (when (get nss (symbol (namespace client-routes)))
       (let [config-file-path (c/concat-paths
                                [project-root "charly.edn"])
             env (config/config->env

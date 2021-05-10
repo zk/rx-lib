@@ -7,10 +7,13 @@
             [charly.cli :as cli]
             [figwheel.main.api :as fapi]
             [clojure.tools.cli :as tcli]
+            [charly.tools-repl :as tr]
             [jansi-clj.core :refer [red bold]]))
 
 (defn start-dev! [& [{config-path :config
                       :keys [skip-nrepl verbose]}]]
+  (tr/set-refresh-dirs "./src")
+  (tr/refresh)
   (let [config (merge
                  (cli/read-config (or config-path "./charly.edn"))
                  {:runtime-env :dev})]
@@ -22,6 +25,7 @@
         (watch/start-watchers! env)
         (cli/start-http-server! env)
         (cli/start-figwheel-server! env)
+        (cli/start-node-dev! env)
         (when-not skip-nrepl
           (cli/start-nrepl-server! env))))))
 
@@ -38,8 +42,11 @@
         (cli/compile-prod env))))
   (println "*** Done generating production build"))
 
-(defn cljs-repl []
+(defn web-repl []
   (fapi/cljs-repl "charly-cljs"))
+
+(defn api-repl []
+  (fapi/cljs-repl "charly-api-cljs"))
 
 (def cli-options
   [["-c" "--config CONFIG_PATH" "Path to charly config"]
@@ -82,6 +89,8 @@
   (-main "--build")
 
   (cljs-repl)
+
+  (cljs-api-repl)
 
   (start-dev! {:config-path "charly.edn"})
 

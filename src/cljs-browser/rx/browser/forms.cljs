@@ -967,7 +967,8 @@
                 (merge
                   (select-keys
                     opts
-                    [:min :max :step :class])
+                    [:min :max :step :class
+                     :on-mouse-up])
                   (merge
                     {:type "range"
                      :style style

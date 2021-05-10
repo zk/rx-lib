@@ -5,7 +5,8 @@
             [charly.compiler :as cmp]
             [charly.nrepl-server :as nr]
             [charly.http-server :as hs]
-            [jansi-clj.core :refer :all])
+            [jansi-clj.core :refer :all]
+            [charly.node-server :as ns])
   (:refer-clojure :exclude [compile]))
 
 (def ! (red (bold "!")))
@@ -66,3 +67,9 @@
 
 (defn start-figwheel-server! [env]
   (cmp/start-figwheel-server! env))
+
+(defn start-node-dev! [env]
+  (println "* Start node proc")
+  (ns/start-figwheel-server! env)
+  (ns/start-node-proc! env)
+  )

@@ -47,7 +47,6 @@
                           :font-feature-settings
                           :appearance}}
           garden-opts)
-        #_(rules-fn env)
         ((cfg/resolve-var rules) env)))
     output-path))
 
@@ -86,7 +85,7 @@
                   [project-root]
                   parts))))))
 
-(defn figwheel-opts [{:keys [cljs opts project-root dev-output-path] :as env}]
+(defn figwheel-opts [{:keys [client-cljs opts project-root dev-output-path] :as env}]
   (let [watch-dirs (watch-dirs env)]
     (ks/deep-merge
       {:mode :serve
@@ -98,9 +97,9 @@
        :launch-node false
        :hot-reload-cljs true
        :css-dirs [(concat-paths [dev-output-path "css"])]}
-      (:figwheel cljs))))
+      (:figwheel client-cljs))))
 
-(defn figwheel-compiler-opts [{:keys [cljs dev-output-path] :as opts}]
+(defn figwheel-compiler-opts [{:keys [client-cljs dev-output-path] :as opts}]
   (ks/deep-merge
     {:output-to (concat-paths
                   [dev-output-path "cljs" "app.js"])
@@ -112,9 +111,9 @@
      :source-map true
      :parallel-build true
      :asset-path "/cljs"}
-    (:compiler cljs)))
+    (:compiler client-cljs)))
 
-(defn compile-prod-cljs [{:keys [prod-output-path project-root cljs]
+(defn compile-prod-cljs [{:keys [prod-output-path project-root client-cljs]
                           :as env}]
   (let [cljs-build-dir (concat-paths
                          [project-root "build" "prod-cljs"])]
@@ -132,7 +131,7 @@
                        [cljs-build-dir "app.js.map"])
          :parallel-build true
          :asset-path "/cljs"}
-        (:compiler cljs)))
+        (:compiler client-cljs)))
 
     (io/make-parents
       (io/as-file
@@ -155,10 +154,10 @@
         (concat-paths
           [cljs-build-dir "app.js.map"])))))
 
-(defn start-figwheel-server! [{:keys [cljs id] :as opts}]
+(defn start-figwheel-server! [{:keys [client-cljs id] :as opts}]
   (let [id (or id "charly-cljs")
         id "charly-cljs"]
-    (stop-figwheel-server! cljs)
+    (stop-figwheel-server! client-cljs)
     (fapi/start
       (figwheel-opts opts)
       {:id id

@@ -221,7 +221,8 @@
            (let [[opts & children] (ks/ensure-opts args)
                  children (ks/unwrap-children children)
                  {:keys [horizontal? gap style]} opts
-                 pad-style (th/pad-padding opts)]
+                 ;;pad-style (th/pad-padding opts)
+                 ]
              (bcss/update-css! bcss
                (concat
                  [(merge
@@ -230,7 +231,8 @@
                     (if horizontal?
                       {:flex-direction 'row})
                     (select-keys opts css/flex-keys)
-                    pad-style)]
+                    ;;pad-style
+                    )]
                  (:css opts)))
              (into
                [:div

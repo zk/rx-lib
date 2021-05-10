@@ -59,6 +59,7 @@
         jansi-clj/jansi-clj {:mvn/version "0.1.1"}
         juji/editscript {:mvn/version "0.4.2"},
         lilactown/hx {:mvn/version "0.5.3"},
+        macchiato/core {:mvn/version "0.2.21"}
         me.raynes/conch {:mvn/version "0.8.0"},
         metosin/reitit-core {:mvn/version "0.5.10"},
         metosin/reitit-ring {:mvn/version "0.5.10"},

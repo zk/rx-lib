@@ -3,8 +3,6 @@
             [rx.anom :as anom]
             [clojure.java.io :as io]
             [clojure.string :as str]
-
-
             [clojure.tools.namespace.find :as f]
             [clojure.tools.namespace.file :as nsf]
             [clojure.tools.namespace.parse :as parse]
@@ -55,8 +53,12 @@
     (merge
       {:dev-output-path (concat-paths
                           [project-root build-path "dev"])
+       :api-dev-output-path (concat-paths
+                              [project-root build-path "api" "dev"])
        :prod-output-path (concat-paths
-                           [project-root build-path "prod"])}
+                           [project-root build-path "prod"])
+       :api-prod-output-path (concat-paths
+                               [project-root build-path "api" "prod"])}
       config)))
 
 (defn expand-static-path [{:keys [project-root] :as config}]
@@ -92,14 +94,14 @@
         (anom/anom {:desc "Couldn't resolve var"
                     :sym sym})))))
 
-(defn expand-routes [{:keys [project-root routes default-page-template] :as config}]
-  (let [routes-fn (resolve-sym routes)
+(defn expand-routes [{:keys [project-root client-routes default-page-template] :as config}]
+  (let [routes-fn (resolve-sym client-routes)
         default-page-template-fn (when default-page-template
                                    (resolve-sym default-page-template))
         file-paths (file-paths-for-namespace
                      (concat-paths
                        [project-root "src"])
-                     (symbol (namespace routes)))]
+                     (symbol (namespace client-routes)))]
     (merge
       {:routes-fn routes-fn}
       (when default-page-template-fn
@@ -203,3 +205,8 @@
       expand-css
       expand-dev-server
       expand-env-vars))
+
+(defn read-env [path]
+  (config->env (read-config path)))
+
+

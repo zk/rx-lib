@@ -6,6 +6,7 @@
   (.init (.getInstance js/amplitude) api-key))
 
 (defn log-event [event-name & [event-payload]]
+  (println "[AMP]" event-name (pr-str event-payload))
   (.logEvent (.getInstance js/amplitude)
     event-name
     (clj->js event-payload)))
