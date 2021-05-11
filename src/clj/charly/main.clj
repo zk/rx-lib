@@ -32,6 +32,23 @@
 (defn build-prod! [& [{config-path :config :keys [verbose]}]]
   (println "\n")
   (println "Generating production build")
+  (tr/set-refresh-dirs "./src")
+  (tr/refresh)
+  (let [config (merge
+                 (cli/read-config (or config-path "./charly.edn"))
+                 {:runtime-env :prod})]
+    (when-not (anom/? config)
+      (let [env (config/config->env config)]
+        (when verbose
+          (ks/spy "ENV" env))
+        (cli/compile-prod env))))
+  (println "*** Done generating production build"))
+
+(defn build-prod-api! [& [{config-path :config :keys [verbose]}]]
+  (println "\n")
+  (println "Generating production API build")
+  (tr/set-refresh-dirs "./src")
+  (tr/refresh)
   (let [config (merge
                  (cli/read-config (or config-path "./charly.edn"))
                  {:runtime-env :dev})]
@@ -39,8 +56,23 @@
       (let [env (config/config->env config)]
         (when verbose
           (ks/spy "ENV" env))
-        (cli/compile-prod env))))
+        (cli/compile-prod-api env))))
   (println "*** Done generating production build"))
+
+(defn deploy-prod-api! [& [{config-path :config :keys [verbose]}]]
+  (println "\n")
+  (println "Deploying production API build")
+  (tr/set-refresh-dirs "./src")
+  (tr/refresh)
+  (let [config (merge
+                 (cli/read-config (or config-path "./charly.edn"))
+                 {:runtime-env :dev})]
+    (when-not (anom/? config)
+      (let [env (config/config->env config)]
+        (when verbose
+          (ks/spy "ENV" env))
+        (cli/deploy-prod-api env))))
+  (println "*** Done deploying API"))
 
 (defn web-repl []
   (fapi/cljs-repl "charly-cljs"))
@@ -54,13 +86,16 @@
    ["-d" "--dev" "Start dev"]
    ["-b" "--build" "Build prod to build/prod"]
    ["-v" "--verbose" "Print debug info to stdout"]
-   ["-h" "--help" "Show this usage description"]])
+   ["-h" "--help" "Show this usage description"]
+   ["-a" "--build-api" "Build prod api to build/api/prod"]
+   ["-e" "--deploy-api" "Build and deploy prod api"]])
 
 (defn -main [& args]
   (let [{:keys [options summary errors] :as opts}
         (tcli/parse-opts args cli-options)
 
-        {:keys [config help dev prod build]} options]
+        {:keys [config help dev prod build
+                build-api deploy-api]} options]
     (cond
       help (do
              (println "Charly CLI")
@@ -69,6 +104,11 @@
       dev (start-dev! options)
       build (do (build-prod! options)
                 (System/exit 0))
+      build-api (do (build-prod-api! options)
+                    (System/exit 0))
+
+      deploy-api (do (deploy-prod-api! options)
+                     (System/exit 0))
       errors
       (do
         (doseq [s errors]
@@ -87,6 +127,8 @@
   (-main "--dev" "--skip-nrepl")
 
   (-main "--build")
+
+  (-main "-e")
 
   (cljs-repl)
 

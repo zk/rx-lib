@@ -21,6 +21,7 @@
 
             CreateFunctionRequest
             UpdateFunctionCodeRequest
+            UpdateFunctionConfigurationRequest
             GetFunctionRequest
             InvokeRequest
             ResourceConflictException
@@ -113,6 +114,23 @@
           (lambda-client client-config)
           (jd/to-java
             UpdateFunctionCodeRequest
+            payload)))}]
+    (catch ResourceNotFoundException e
+      [nil {:error-code :resource-not-found} e])
+    (catch InvalidParameterValueException e
+      [nil {:error-code :validation-failed} e])
+    (catch Exception e
+      [nil {:error-code :unknown} e])))
+
+(defn update-function-configuration [client-config payload]
+  (try
+    [{:success? true
+      :update-result
+      (jd/from-java
+        (.updateFunctionConfiguration
+          (lambda-client client-config)
+          (jd/to-java
+            UpdateFunctionConfigurationRequest
             payload)))}]
     (catch ResourceNotFoundException e
       [nil {:error-code :resource-not-found} e])

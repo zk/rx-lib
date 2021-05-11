@@ -45,7 +45,7 @@
                                initial-errors
                                initial-submit-failed?]}]]
   {:!data (r/atom initial-data)
-   :!errors (r/atom initial-errors)
+   :!errors (ks/spy (r/atom initial-errors))
    :!state (r/atom {:submit-failed? initial-submit-failed?})
    :!validating (r/atom nil)
    :!prop-validations (atom nil)})
@@ -1325,6 +1325,7 @@
 
 
   )
+
 
 
 

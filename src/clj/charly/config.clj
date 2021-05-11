@@ -176,16 +176,16 @@
         prod-env (merge prod-env-file-props (System/getenv))]
     (merge
       config
-      (if (= runtime-env :prod)
-        (when-not (empty? prod-env)
-          {:env-vars prod-env
-           :client-env-vars (->> prod-env
-                                 (filter (fn [[k v]]
-                                           (str/starts-with? k "CHARLY_PUB")))
-                                 (into {}))})
+      (if (= runtime-env :dev)
         (when-not (empty? dev-env)
           {:env-vars dev-env 
            :client-env-vars (->> dev-env
+                                 (filter (fn [[k v]]
+                                           (str/starts-with? k "CHARLY_PUB")))
+                                 (into {}))})
+        (when-not (empty? prod-env)
+          {:env-vars prod-env
+           :client-env-vars (->> prod-env
                                  (filter (fn [[k v]]
                                            (str/starts-with? k "CHARLY_PUB")))
                                  (into {}))})))))

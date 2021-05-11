@@ -20,9 +20,9 @@
 
 (defn gen-from-routes [env output-path]
   (println "* Generating html files from routes")
-  (let [{:keys [routes-fn routes]} env]
+  (let [{:keys [routes-fn client-routes]} env]
     (if (anom/? routes-fn)
-      (println ! "Couldn't resolve routes fn" routes)
+      (println ! "Couldn't resolve routes fn" client-routes)
       (let [routes-res (cmp/generate-routes env output-path)]
         (if (anom/? routes-res)
           (do
@@ -57,6 +57,16 @@
       (cmp/compile-prod-cljs env)
       (cmp/generate-vercel-json env))))
 
+(defn compile-prod-api [env]
+  (let [{:keys [prod-output-path]} env]
+    (println "* Building prod api")
+    (ns/compile-prod-api env)))
+
+(defn deploy-prod-api [env]
+  (let [{:keys [prod-output-path]} env]
+    (println "* Deploying prod api")
+    (ns/deploy-prod-api env)))
+
 (defn start-http-server! [env]
   (println "* Starting dev server")
   (hs/start-http-server! env))
@@ -71,5 +81,4 @@
 (defn start-node-dev! [env]
   (println "* Start node proc")
   (ns/start-figwheel-server! env)
-  (ns/start-node-proc! env)
-  )
+  (ns/start-node-proc! env))
