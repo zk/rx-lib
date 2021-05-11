@@ -45,7 +45,7 @@
                                initial-errors
                                initial-submit-failed?]}]]
   {:!data (r/atom initial-data)
-   :!errors (ks/spy (r/atom initial-errors))
+   :!errors (r/atom initial-errors)
    :!state (r/atom {:submit-failed? initial-submit-failed?})
    :!validating (r/atom nil)
    :!prop-validations (atom nil)})
@@ -768,6 +768,7 @@
                       on-key-press
                       on-key-down
                       input-type
+                      type
                       form-state
                       style
                       autofocus?
@@ -803,7 +804,7 @@
               (merge
                 (select-keys opts [:on-focus :on-blur])
                 {:ref ref
-                 :type (or input-type "text")
+                 :type (or type input-type "text")
                  :placeholder placeholder
                  :style (merge-with ks/deep-merge
                           {:outline 0
