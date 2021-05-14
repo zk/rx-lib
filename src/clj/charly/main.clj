@@ -10,6 +10,9 @@
             [charly.tools-repl :as tr]
             [jansi-clj.core :refer [red bold]]))
 
+(defn start-node-dev? [env]
+  (:api-cljs env))
+
 (defn start-dev! [& [{config-path :config
                       :keys [skip-nrepl verbose]}]]
   (tr/set-refresh-dirs "./src")
@@ -25,7 +28,8 @@
         (watch/start-watchers! env)
         (cli/start-http-server! env)
         (cli/start-figwheel-server! env)
-        (cli/start-node-dev! env)
+        (when (start-node-dev? env)
+          (cli/start-node-dev! env))
         (when-not skip-nrepl
           (cli/start-nrepl-server! env))))))
 

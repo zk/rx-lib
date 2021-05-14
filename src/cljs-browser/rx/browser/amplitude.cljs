@@ -11,10 +11,12 @@
     event-name
     (clj->js event-payload)))
 
-(comment
+(defn identify [m]
+  (println "[AMP] identify" (pr-str m))
+  (let [o (js/amplitude.Identify.)]
+    (doseq [[k v] m]
+      (.set o (clj->js k) (clj->js v)))
+    (.identify (.getInstance js/amplitude) o)))
 
-  
 
-  
-
-  )
+(comment)
