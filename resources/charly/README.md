@@ -3,6 +3,8 @@
 Charly is a modern web framework in the vein of Next.js.
 
 
+
+
 ## Hot reload all the things
 
 ### Checklist
@@ -19,3 +21,8 @@ Charly is a modern web framework in the vein of Next.js.
 * `:client-cicd`
   * `:git-user-email`, `:git-user-name` -- used to generate the deploy script
 
+
+
+## Working on Charly
+
+* [Figma](https://www.figma.com/file/9sfOfkNHPSiMKCyLS6w2KJ/Charly?node-id=0%3A1&viewport=655%2C505%2C1)

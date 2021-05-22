@@ -1,6 +1,7 @@
 (ns charly.watch
   (:require [rx.kitchen-sink :as ks]
             [charly.compiler :as c]
+            [charly.static-templates :as st]
             [charly.config :as config]
             [charly.cli :as cli]
             [clojure.java.io :as io]
@@ -40,7 +41,7 @@
       :handler (fn [ctx {:keys [kind file] :as action}]
                  (let [fq-static-path (c/concat-paths
                                         [(System/getProperty "user.dir") static-path])
-                       to-file (c/to-file
+                       to-file (st/to-file
                                  file
                                  fq-static-path
                                  dev-output-path)]
@@ -52,8 +53,8 @@
                            (println "File changed, updating" (.getPath to-file))
                            (println "File deleted, removing" (.getPath to-file)))
                          (condp = kind
-                           :create (c/copy-static-file copy-spec)
-                           :modify (c/copy-static-file copy-spec)
+                           :create (st/copy-static-file copy-spec)
+                           :modify (st/copy-static-file copy-spec)
                            :delete (io/delete-file (:to-file copy-spec)))
                          (catch Exception e
                            (println "Exception handling filesystem change" (pr-str action))

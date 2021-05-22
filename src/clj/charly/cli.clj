@@ -3,6 +3,7 @@
             [rx.anom :as anom]
             [charly.config :as config]
             [charly.compiler :as cmp]
+            [charly.static-templates :as st]
             [charly.nrepl-server :as nr]
             [charly.http-server :as hs]
             [jansi-clj.core :refer :all]
@@ -25,7 +26,7 @@
   (let [{:keys [routes-fn client-routes]} env]
     (if (anom/? routes-fn)
       (println ! "Couldn't resolve routes fn" client-routes)
-      (let [routes-res (cmp/generate-routes env output-path)]
+      (let [routes-res (st/generate-routes env output-path)]
         (if (anom/? routes-res)
           (do
             (println ! "Error generating route html")
@@ -42,7 +43,7 @@
 (defn compile-dev [env]
   (let [{:keys [dev-output-path]} env]
     (println "* Copying static files")
-    (let [copy-res (cmp/copy-static env dev-output-path)]
+    (let [copy-res (st/copy-static env dev-output-path)]
       (doseq [{:keys [to-file]} copy-res]
         (println "  Wrote" (.getPath to-file)))
       (gen-from-routes env dev-output-path)
@@ -51,7 +52,7 @@
 (defn compile-prod [env]
   (let [{:keys [prod-output-path]} env]
     (println "* Copying static files")
-    (let [copy-res (cmp/copy-static env prod-output-path)]
+    (let [copy-res (st/copy-static env prod-output-path)]
       (doseq [{:keys [to-file]} copy-res]
         (println "  Wrote" (.getPath to-file)))
       (gen-from-routes env prod-output-path)

@@ -25,15 +25,11 @@
     ns-sym))
 
 (defn concat-paths [parts]
-  (->> parts
-       (remove nil?)
-       (map-indexed
-         (fn [i s]
-           (cond
-             (= i (max 0 (dec (count parts)))) s
-             (str/ends-with? s "/") s
-             :else (str s "/"))))
-       (apply str)))
+  (str/replace
+    (->> parts
+         (interpose "/")
+         (apply str))
+    #"/+" "/"))
 
 (defn read-config [path]
   (try
@@ -209,4 +205,5 @@
 (defn read-env [path]
   (config->env (read-config path)))
 
-
+(defn client-dev-build-dir [env]
+  (:dev-output-path env))
