@@ -6,7 +6,9 @@
             [charly.nrepl-server :as nr]
             [charly.http-server :as hs]
             [jansi-clj.core :refer :all]
-            [charly.node-server :as ns])
+            [charly.node-server :as ns]
+            [figwheel.main.evalback :as evalback]
+            [figwheel.main.api :as fapi])
   (:refer-clojure :exclude [compile]))
 
 (def ! (red (bold "!")))
@@ -82,3 +84,12 @@
   (println "* Start node proc")
   (ns/start-figwheel-server! env)
   (ns/start-node-proc! env))
+
+
+(comment
+
+  (evalback/eval-cljs
+    (ks/pp (fapi/repl-env "charly-cljs"))
+    '(js/alert "HI"))
+  
+  )

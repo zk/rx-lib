@@ -4,11 +4,24 @@
             [charly.config :as config]
             [charly.compiler :as cmp]
             [charly.watch :as watch]
+            [charly.cicd :as cicd]
             [charly.cli :as cli]
             [figwheel.main.api :as fapi]
             [clojure.tools.cli :as tcli]
             [charly.tools-repl :as tr]
             [jansi-clj.core :refer [red bold]]))
+
+(defn options-read-config [options]
+  (cli/read-config (or (:config options) "./charly.edn")))
+
+(defn cmd-write-github-actions [{:keys [config verbose] :as options}]
+  (println "* Writing github actions to repo")
+  (let [env (merge
+              {:debug? verbose}
+              (-> options
+                  options-read-config
+                  config/config->env))]
+    (cicd/spit-github-actions env)))
 
 (defn start-node-dev? [env]
   (:api-cljs env))
@@ -92,14 +105,16 @@
    ["-v" "--verbose" "Print debug info to stdout"]
    ["-h" "--help" "Show this usage description"]
    ["-a" "--build-api" "Build prod api to build/api/prod"]
-   ["-e" "--deploy-api" "Build and deploy prod api"]])
+   ["-e" "--deploy-api" "Build and deploy prod api"]
+   [nil  "--write-github-actions" "Write github actions"]])
 
 (defn -main [& args]
   (let [{:keys [options summary errors] :as opts}
         (tcli/parse-opts args cli-options)
 
         {:keys [config help dev prod build
-                build-api deploy-api]} options]
+                build-api
+                deploy-api]} options]
     (cond
       help (do
              (println "Charly CLI")
@@ -118,6 +133,10 @@
         (doseq [s errors]
           (println (red (bold s))))
         (System/exit 1))
+
+      (:write-github-actions options)
+      (cmd-write-github-actions options)
+      
       :else (do (println "Please provide one of --dev or --build, or -h for help")
                 (System/exit 1)))))
 
@@ -133,6 +152,8 @@
   (-main "--build")
 
   (-main "-e")
+
+  (-main "--write-github-actions" "--verbose")
 
   (cljs-repl)
 
