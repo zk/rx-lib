@@ -75,7 +75,10 @@
         org.eclipse.jgit/org.eclipse.jgit
         {:mvn/version "5.5.1.201910021850-r"},
         org.pegdown/pegdown {:mvn/version "1.4.1"},
-        prismatic/dommy {:mvn/version "1.1.0"}}
+        prismatic/dommy {:mvn/version "1.1.0"}
+        cider/cider-nrepl {:mvn/version "0.25.5"}
+        cider/piggieback {:mvn/version "0.5.2"}
+        nrepl/nrepl {:mvn/version "0.8.3"}}
  
  :aliases {:cider-cljs
            {:extra-deps
