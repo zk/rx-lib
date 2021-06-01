@@ -69,7 +69,9 @@
 
 #?(:clj
    (defn error? [o]
-     (instance? Exception o))
+     (or
+       (instance? Exception o)
+       (instance? Throwable o)))
    :cljs
    (defn error? [o]
      (instance? js/Error o)))
