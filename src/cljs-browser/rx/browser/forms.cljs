@@ -574,41 +574,44 @@
     [:on-submit-failed "Function called when the on-submit action results in failed prop validations. Called with a map of the data-key to failed validation message."]
     [:on-submit-reset "Called when "]]}
   [& [opts & children :as args]]
-  (r/create-class
-    (-> {:reagent-render
-         (fn [& [opts & children :as args]]
-           (let [[{:keys [form-state
-                          on-submit
-                          on-submit-failed
-                        
-                          disable-submit-prevent-default?]
-                   :as opts} & children]
-                 (ks/ensure-opts args)
-                 form-state (or form-state (create-state opts))
+  (let [!form-state (atom nil)]
+    (r/create-class
+      (-> {:reagent-render
+           (fn [& [opts & children :as args]]
+             (let [[{:keys [form-state
+                            on-submit
+                            on-submit-failed
+                            
+                            disable-submit-prevent-default?]
+                     :as opts} & children]
+                   (ks/ensure-opts args)
+                   form-state (or form-state
+                                  @!form-state
+                                  (let [fs (create-state opts)]
+                                    (reset! !form-state fs)
+                                    fs))
+                   form-state (merge form-state {:opts opts})
 
-                 form-state (merge form-state
-                              {:opts opts})
+                   opts (merge opts {:form-state form-state})
+                   children children #_(process-form-children opts children)
 
-                 opts (merge opts {:form-state form-state})
-                 children children #_(process-form-children opts children)
+                   {:keys [!prop-validations !errors]} form-state]
 
-                 {:keys [!prop-validations !errors]} form-state]
+               (reset! !prop-validations (:prop-validations opts))
+               
+               [:form
+                {:style (:style opts)
+                 :on-submit (fn [e]
+                              (when-not disable-submit-prevent-default?
+                                (.preventDefault e)
+                                (.stopPropagation e))
+                              (handle-submit form-state))}
 
-             (reset! !prop-validations (:prop-validations opts))
-           
-             [:form
-              {:style (:style opts)
-               :on-submit (fn [e]
-                            (when-not disable-submit-prevent-default?
-                              (.preventDefault e)
-                              (.stopPropagation e))
-                            (handle-submit form-state))}
-
-              [:> form-provider {:value (assoc-obj (js-obj) "wrapped" {:form-state form-state})}
-               (into
-                 [ui/g (dissoc opts :prop-validations :initial-data)]
-                 children)]]))}
-        (browser/bind-lifecycle-callbacks opts))))
+                [:> form-provider {:value (assoc-obj (js-obj) "wrapped" {:form-state form-state})}
+                 (into
+                   [ui/g (dissoc opts :prop-validations :initial-data)]
+                   children)]]))}
+          (browser/bind-lifecycle-callbacks opts)))))
 
 (defn submit-button [_]
   (r/create-class
@@ -680,7 +683,7 @@
   [{:keys [throttle-validate-on-change !val]
     :or {throttle-validate-on-change 0}
     :as opts}]
-  
+
   (let [change-ch (chan (sliding-buffer 1))
         blur-ch (chan (sliding-buffer 1))]
 
@@ -692,7 +695,7 @@
           (let [[[opts form-state e] got-ch] (alts! [ch blur-ch])]
             (when (or (and (= got-ch blur-ch)
                            (:validate-on-blur? opts))
-                      (and (= got-ch change-ch)
+                      (and (= got-ch ch)
                            (:validate-on-change? opts)))
               (<! (run-validation
                     opts
@@ -741,7 +744,7 @@
     (clear-error form-state data-key)
 
     (when validate-on-change?
-      (put! change-ch :change))))
+      (put! change-ch [opts form-state e]))))
 
 (defn create-input-state [opts]
   (initialize-validation-loop opts))
@@ -778,6 +781,7 @@
                       disabled?
                       disabled-style]
                :as opts}]
+
            (let [{:keys [:bg-color
                          :fg-color
                          :border-color
@@ -786,6 +790,7 @@
                          :hpad
                          :vspace
                          :label-font-size]}
+                 
                  (th/resolve opts
                    (map :rule common-theme-docs))
 
@@ -1072,7 +1077,8 @@
     (clear-error form-state data-key)
 
     (when validate-on-change?
-      (put! change-ch :change))))
+      (put! change-ch
+        [opts form-state e]))))
 
 (defn select
   {:opts [[:data-key]
