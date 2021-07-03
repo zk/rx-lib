@@ -345,7 +345,7 @@
           :style-down active-style
           :disabled (when disabled? "disabled")
           :class class}
-         (select-keys opts [:active? :hover? :down? :href]))]
+         (select-keys opts [:active? :hover? :down? :href :target]))]
       (->> [(when icon
               [(if-let [comp (:comp icon)]
                  comp
