@@ -2,6 +2,7 @@
          "src/cljc"
          "src/cljs"
          "src/cljs-browser"
+         "src/jsdeps"
          "resources/charly/charly-test-site/src/cljc"
          "resources/charly/charly-test-site/src/cljs-browser"]
  :deps {aleph {:mvn/version "0.4.6"},
