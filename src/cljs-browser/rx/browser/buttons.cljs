@@ -343,7 +343,7 @@
                      disabled-style))
           :style-over hover-style
           :style-down active-style
-          :disabled (when disabled? "disabled")
+          :disabled disabled?
           :class class}
          (select-keys opts [:active? :hover? :down? :href :target]))]
       (->> [(when icon

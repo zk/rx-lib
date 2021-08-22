@@ -11,8 +11,10 @@
 (defn <create-client [opts]
   (ks/<promise (js/createAuth0Client (clj->js opts))))
 
-(defn <login-with-redirect [client]
-  (ks/<promise (.loginWithRedirect client)))
+(defn <login-with-redirect [client opts]
+  (ks/<promise (.loginWithRedirect
+                 client
+                 (clj->js opts))))
 
 (defn <login-with-popup [client]
   (ks/<promise (.loginWithPopup client)))

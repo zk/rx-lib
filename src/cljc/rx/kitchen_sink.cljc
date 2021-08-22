@@ -13,6 +13,7 @@
                 [camel-snake-kebab.core :as csk]
                 [clojure.edn :as edn]
                 [rx.anom :as anom :refer [gol]]
+                [rx.err :as err]
                 [clojure.core.async
                  :refer [<! >! chan put! close! pipe
                          go go-loop take! timeout alts!]])
@@ -29,6 +30,7 @@
                 [goog.string.format]
                 [camel-snake-kebab.core :as csk]
                 [rx.anom :as anom :refer-macros [gol]]
+                [rx.err :as err]
                 [goog.crypt :as crypt]
                 [goog.crypt.base64 :as b64]
                 [goog.crypt.Md5 :as Md5]
@@ -877,7 +879,7 @@
           (close! ch))))
     ch))
 
-(defn <promise [p]
+(defn <promise [p & [{:keys [format-err]}]]
   (let [ch (chan)]
     (.catch
       (.then p
@@ -887,12 +889,21 @@
           (close! ch)))
       (fn [err]
         (when err
-          (if (anom/error? err)
-            (put! ch (anom/from-err err))
-            (put! ch (anom/anom {:desc "Caught in promise"
-                                 :err err}))))
+          (put! ch (merge
+                     (err/from err)
+                     (when format-err
+                       (try
+                         (format-err err)
+                         (catch #?(:clj Exception :cljs js/Error) e
+                           {:format-err "Error calling format-err in <promise"})))))
+          #_(if (anom/error? err)
+              (put! ch (anom/from-err err))
+              (put! ch (anom/anom {:desc "Caught in promise"
+                                   :err err}))))
         (close! ch)))
     ch))
+
+(def <prom <promise)
 
 (defn <promise->clj [p & [to-clj]]
   (go

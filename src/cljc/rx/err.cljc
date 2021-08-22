@@ -1,6 +1,8 @@
 (ns rx.err
   (:require [clojure.string :as str]
-            [clojure.pprint :refer [pprint]]
+            #?(:clj [clojure.pprint]
+               :cljs [cljs.pprint])
+            [rx.anom :as anom]
             [clojure.core.async
              :refer [go <!]]))
 
@@ -36,7 +38,10 @@
   #?(:clj (.getMessage err)
      :cljs (.-message err)))
 
-(def err? ::code)
+(defn err? [o]
+  (or (::code o)
+      (anom/? o)))
+
 (def ? err?)
 
 (defn from-error-obj [err]
@@ -46,7 +51,9 @@
     (if (err? ed)
       ed
       {::desc message
-       ::code code})))
+       ::code code
+       ::error-obj err
+       ::stack (err-obj->stack err)})))
 
 (defn from-map [m]
   (merge
@@ -69,10 +76,16 @@
           (dissoc (from context-entry) ::code))))
     err))
 
+(defn anom->err [o]
+  {::desc (::anom/desc o)
+   ::code (::anom/code o)
+   ::stack (::anom/stack o)})
+
 (defn from [o & [adtl-context]]
   (when o
     (add-context
       (cond
+        (anom/? o) (anom->err o)
         (err? o) o
         (string? o) {::desc o
                      ::code ::default}
@@ -155,16 +168,17 @@
               ~@body
               (catch js/Error e#
                 (println "Error in go block")
+                (cljs.pprint/pprint (rx.err/from e#))
                 (when (ex-data e#)
                   (prn (ex-data e#)))
-                (prn e#)
                 (.error js/console e#)
                 (rx.err/from e#))))
           (clojure.core.async/go
             (try
               ~@body
               (catch Throwable e#
-                (println "Error in go block" (pr-str e#))
+                (println "Error in go block")
+                (clojure.pprint/pprint (rx.err/from e#))
                 (rx.err/from e#)))))))
 
 #?(:clj
@@ -187,35 +201,36 @@
 
 #?(:cljs
 
-   (do
+   (comment
+     (do
 
-     (defn t-foo []
-       (try
-         (throw (js/Error. "foo!"))
-         (catch js/Error e
-           (throw-err e {:desc "FOO"}))))
+       (defn t-foo []
+         (try
+           (throw (js/Error. "foo!"))
+           (catch js/Error e
+             (throw-err e {:desc "FOO"}))))
 
-     (defn t-bar []
-       (try
-         (t-foo)
-         (catch js/Error e
-           (throw-err e {:desc "Something else"}))))
+       (defn t-bar []
+         (try
+           (t-foo)
+           (catch js/Error e
+             (throw-err e {:desc "Something else"}))))
 
-     (defn t-baz []
-       (try
-         (t-bar)
-         (catch js/Error e
-           (throw-err e "Top level"))))
+       (defn t-baz []
+         (try
+           (t-bar)
+           (catch js/Error e
+             (throw-err e "Top level"))))
 
-     (defn t-bap []
-       (try
-         (prn "tbap")
-         (t-baz)
-         (catch js/Error e
-           (prn "E")
-           (pprint (from e)))))
+       (defn t-bap []
+         (try
+           (prn "tbap")
+           (t-baz)
+           (catch js/Error e
+             (prn "E")
+             (clojure.pprint/pprint (from e)))))
 
-     ))
+       )))
 
 (comment
 
@@ -228,6 +243,8 @@
   (from (js/Error. "hi!"))
   
   (pprint (err-obj->stack (js/Error. "foo")))
+
+  (pprint (from-error-obj (js/Error. "foo")))
 
   (compound-message
     {:rx.err/desc "Error contacting http server"

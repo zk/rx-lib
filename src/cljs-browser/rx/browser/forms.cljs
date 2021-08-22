@@ -790,9 +790,10 @@
                          :hpad
                          :vspace
                          :label-font-size]}
-                 
                  (th/resolve opts
                    (map :rule common-theme-docs))
+
+                 disabled? (or disabled? (submitting? form-state))
 
                  {:keys [!val] :as opts} (resolve-!val opts)
 
@@ -831,7 +832,7 @@
                  :on-key-press on-key-press
                  :on-key-down on-key-down}
                 (when disabled?
-                  {:disabled "disabled"})
+                  {:disabled disabled?})
                 (when autofocus?
                   {:autoFocus true})
                 (when !val
