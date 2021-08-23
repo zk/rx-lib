@@ -8,7 +8,7 @@
          "resources/charly/charly-test-site/src/cljs-browser"]
  :deps {aleph {:mvn/version "0.4.6"},
         amazonica {:mvn/version "0.3.145"},
-        bidi {:mvn/version "2.1.3"},
+        bidi {:mvn/version "2.1.6"},
         byte-streams {:mvn/version "0.2.4"},
         byte-transforms {:mvn/version "0.1.4"},
         camel-snake-kebab {:mvn/version "0.4.1"},
