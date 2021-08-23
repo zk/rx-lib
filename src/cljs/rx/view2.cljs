@@ -1,5 +1,5 @@
 (ns rx.view2
-  (:require [rx.kitchen-sink :as ks]
+  (:require [rx.kitchen-sink :as ks :refer-macros [<&]]
             [reagent.core :as r]
             [rx.anom :as anom
              :refer-macros [<defn <?]]
@@ -28,7 +28,7 @@
                route-opts
                adtl-opts)
 
-        spec (ks/<& (route-fn opts))
+        spec (<& (route-fn opts))
 
         {:keys [::spec ::opts]}
         (if (vector? spec)
