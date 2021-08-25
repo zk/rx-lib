@@ -40,6 +40,7 @@
 
 (defn err? [o]
   (or (::code o)
+      (::desc o)
       (anom/? o)))
 
 (def ? err?)
