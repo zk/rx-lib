@@ -150,12 +150,12 @@
      `(if-cljs
           (cljs.core.async/go
             (try
-              ~@(rest body)
+              ~@body
               (catch js/Error e#
                 (rx.err/from e#))))
           (clojure.core.async/go
             (try
-              ~@(rest body)
+              ~@body
               (catch Throwable e#
                 (rx.err/from e#)))))))
 
