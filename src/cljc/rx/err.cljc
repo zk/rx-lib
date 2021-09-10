@@ -57,12 +57,15 @@
        ::stack (err-obj->stack err)})))
 
 (defn from-map [m]
-  (merge
-    (when-let [v (:desc m)]
-      {::desc v})
-    (when-let [v (:code m)]
-      (::code v))
-    (dissoc m :desc :code)))
+  (let [{:keys [desc code]} m]
+    (merge
+      (when-let [v (:desc m)]
+        {::desc v})
+      (when-let [v (:code m)]
+        {::code v})
+      (when (and (not desc) (not code))
+        {::code ::unknown})
+      (dissoc m :desc :code))))
 
 (declare from)
 
