@@ -1128,6 +1128,24 @@
    (defn clog [& args]
      (apply js/console.log args)))
 
+
+(defn select-ns-keys [m ns-or-key]
+  (let [ns (if (keyword? ns-or-key)
+             (namespace ns-or-key)
+             (name ns-or-key))]
+    (->> m
+         (filter #(= ns (namespace (first %))))
+         (into {}))))
+
+(defn remove-ns-from-keys [m]
+  (->> m
+       (map (fn [[k v]]
+              [(if (keyword? k)
+                 (keyword (name k))
+                 k)
+               v]))
+       (into {})))
+
 (comment
 
   (base64-str-binary-length
