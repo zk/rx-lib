@@ -173,9 +173,6 @@
               (catch js/Error e#
                 (println "Error in go block")
                 (cljs.pprint/pprint (rx.err/from e#))
-                (when (ex-data e#)
-                  (prn (ex-data e#)))
-                (.error js/console e#)
                 (rx.err/from e#))))
           (clojure.core.async/go
             (try
