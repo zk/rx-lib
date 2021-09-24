@@ -3,8 +3,10 @@
             #?(:clj [clojure.pprint]
                :cljs [cljs.pprint])
             [rx.anom :as anom]
+            [clojure.spec.alpha :as sa]
             [clojure.core.async
-             :refer [go <!]]))
+             :refer [go <!]])
+  (:require-macros [rx.err :refer [goerr <defn <?]]))
 
 
 ;; Error kernel. Core ideas:
@@ -232,6 +234,23 @@
              (clojure.pprint/pprint (from e)))))
 
        )))
+
+(defn throw-invalid [spec-key v]
+  (when-not spec-key
+    (throw-err {:desc "throw-invalid: missing spec key"}))
+  (when-not (sa/valid? spec-key v)
+    (throw-err (merge
+                 {:desc "Spec invalid value"}
+                 (sa/explain-data spec-key v)))))
+
+(<defn async-realize [chs-list]
+  (loop [chs-list chs-list
+         out []]
+    (if (empty? chs-list)
+      out
+      (recur
+        (rest chs-list)
+        (conj out (<? (first chs-list)))))))
 
 (comment
 
