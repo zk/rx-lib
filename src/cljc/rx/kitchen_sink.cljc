@@ -113,8 +113,7 @@
 #? (:clj
     (defn uuid []
       (-> (java.util.UUID/randomUUID)
-          str
-          (str/replace #"-" ""))))
+          str)))
 
 #? (:cljs
     #_(defn uuid []
@@ -138,9 +137,13 @@
         (let [rhex (.toString (bit-or 0x8 (bit-and 0x3 (rand-int 16))) 16)]
           (str (hex) (hex) (hex) (hex)
                (hex) (hex) (hex) (hex)
+               "-"
                (hex) (hex) (hex) (hex)
+               "-"
                "4"   (hex) (hex) (hex)
+               "-"
                rhex  (hex) (hex) (hex)
+               "-"
                (hex) (hex) (hex) (hex)
                (hex) (hex) (hex) (hex)
                (hex) (hex) (hex) (hex))))))
@@ -515,9 +518,10 @@
     kebab-val))
 
 (defn kebab-case [o]
-  (if (coll? o)
-    (kebab-coll o)
-    (kebab-val o)))
+  (when o
+    (if (coll? o)
+      (kebab-coll o)
+      (kebab-val o))))
 
 (defn env-val [o]
   (csk/->SCREAMING_SNAKE_CASE o))
@@ -534,9 +538,10 @@
     camel-val))
 
 (defn camel-case [o]
-  (if (coll? o)
-    (camel-coll o)
-    (camel-val o)))
+  (when o
+    (if (coll? o)
+      (camel-coll o)
+      (camel-val o))))
 
 (defn snake-val [o]
   (if (keyword? o)
@@ -552,9 +557,10 @@
     snake-val))
 
 (defn snake-case [o]
-  (if (coll? o)
-    (snake-coll o)
-    (snake-val o)))
+  (when o
+    (if (coll? o)
+      (snake-coll o)
+      (snake-val o))))
 
 (defn spy [& os]
   (let [msg (->> os
