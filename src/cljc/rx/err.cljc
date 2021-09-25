@@ -6,7 +6,8 @@
             [clojure.spec.alpha :as sa]
             [clojure.core.async
              :refer [go <!]])
-  (:require-macros [rx.err :refer [goerr <defn <?]]))
+  #?(:cljs
+     (:require-macros [rx.err :refer [goerr <defn <?]])))
 
 
 ;; Error kernel. Core ideas:
