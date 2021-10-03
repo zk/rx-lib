@@ -253,6 +253,60 @@
         (rest chs-list)
         (conj out (<? (first chs-list)))))))
 
+
+;; Error codes https://github.com/cognitect-labs/anomalies
+
+(def unknown ::unknown)
+
+(defn unknown? [{:keys [::code]}]
+  (= unknown code))
+
+(def unavailable ::unavailable)
+
+(defn unavailable? [{:keys [::code]}]
+  (= unavailable code))
+
+(def interrupted ::interrupted)
+
+(defn interrupted? [{:keys [::code]}]
+  (= interrupted code))
+
+(def incorrect ::incorrect)
+
+(defn incorrect? [{:keys [::code]}]
+  (= incorrect code))
+
+(def forbidden ::forbidden)
+
+(defn forbidden? [{:keys [::code]}]
+  (= ::forbidden code))
+
+(def unsupported ::unsupported)
+
+(defn unsupported? [{:keys [::code]}]
+  (= ::unsupported code))
+
+(def not-found ::not-found)
+
+(defn not-found? [{:keys [::code]}]
+  (= ::not-found code))
+
+(def conflict ::conflict)
+
+(defn conflict? [{:keys [::code]}]
+  (= ::conflict code))
+
+(def fault ::fault)
+
+(defn fault? [{:keys [::code]}]
+  (= ::fault code))
+
+(def busy ::busy)
+
+(defn busy? [{:keys [::code]}]
+  (= ::busy code))
+
+
 (comment
 
   (t-bap)
@@ -262,7 +316,7 @@
   (from {::desc "foo"})
   (from {::code :somethin})
   (from (js/Error. "hi!"))
-  
+
   (pprint (err-obj->stack (js/Error. "foo")))
 
   (pprint (from-error-obj (js/Error. "foo")))
@@ -280,5 +334,3 @@
       {:rx.err/desc "Error in app"}]})
 
   )
-
-

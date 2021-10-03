@@ -322,8 +322,7 @@
                :as opts}]
   (let [padding (th/pad-padding opts)
         default-button-style
-        {:border 'none
-         :outline 0}]
+        {:outline 0}]
     (into
       [ui/hover
        (merge
